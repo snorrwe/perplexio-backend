@@ -1,10 +1,11 @@
 sudo: required
 
-
 language: rust
 
 rust:
   - nightly
+
+cache: cargo
 
 services:
   - docker
