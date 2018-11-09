@@ -1,0 +1,22 @@
+sudo: required
+
+
+language: rust
+
+rust:
+  - nightly
+
+services:
+  - docker
+
+script:
+  - cargo test --verbose --all
+
+after_success:
+  - docker build -t frenetiq/perplexio-backend .
+
+deploy:
+  provider: script
+  script: echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin && docker push frenetiq/perplexio-backend
+  on:
+    branch: master
