@@ -251,11 +251,11 @@ impl fmt::Display for Puzzle {
         )?;
         for s in self.solutions.iter() {
             for c in s {
-                write!(formatter, " {}", c);
+                write!(formatter, " {}", c)?;
             }
-            write!(formatter, "\n");
+            write!(formatter, "\n")?;
         }
-        write!(formatter, "\n");
+        write!(formatter, "\n")?;
         for r in 0..self.rows {
             for c in 0..self.columns {
                 write!(formatter, "{} ", *self.at(c, r))?;
