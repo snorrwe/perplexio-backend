@@ -1,5 +1,7 @@
 # Perplexio
 
+[![Build Status](https://travis-ci.org/snorrwe/perplexio-backend.svg?branch=master)](https://travis-ci.org/snorrwe/perplexio-backend)
+
 ## Setting up
 
 - Install Cargo
