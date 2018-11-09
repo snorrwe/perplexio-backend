@@ -10,7 +10,7 @@ services:
   - docker
 
 script:
-  - cargo test --verbose --all
+  - cargo test
 
 after_success:
   - docker build -t frenetiq/perplexio-backend .
