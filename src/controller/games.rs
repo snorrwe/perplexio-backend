@@ -3,7 +3,8 @@ use super::super::model::puzzle::Puzzle;
 use super::super::service::auth;
 use super::super::service::config;
 use super::super::service::db_client::db_client;
-use rocket::http::Cookies;
+use rocket::http::{Cookies, Status};
+use rocket::response::status;
 use rocket::State;
 use rocket_contrib::json::Json;
 use serde_json::Value;
@@ -67,10 +68,13 @@ pub fn post_game(
     game: Json<GameSubmission>,
     mut cookies: Cookies,
     config: State<config::Config>,
-) -> String {
+) -> Result<String, status::Custom<String>> {
     let current_user = auth::logged_in_user_from_cookie(&mut cookies, &config);
     if current_user.is_none() {
-        return "Log in first".to_string();
+        return Err(status::Custom(
+            Status::Unauthorized,
+            "Log in first".to_string(),
+        ));
     }
     let current_user = current_user.unwrap();
 
@@ -96,14 +100,31 @@ pub fn post_game(
         &[&game.name, &current_user.id, &json],
     );
 
-    let id: i32 = res
-        .expect("Failed to create new game")
-        .iter()
-        .map(|row| row.get(0))
-        .next()
-        .unwrap();
-
-    transaction.commit().unwrap();
-
-    id.to_string()
+    match res {
+        Ok(inserted) => {
+            transaction
+                .commit()
+                .expect("Failed to commit the transaction, aborting");
+            let id: i32 = inserted.iter().map(|row| row.get(0)).next().unwrap();
+            Ok(id.to_string())
+        }
+        Err(error) => {
+            if let Some(error) = error.code() {
+                if error.code() == "23505" {
+                    return Err(status::Custom(
+                        Status::BadRequest,
+                        "Game with given name already exists".to_string(),
+                    ));
+                }
+            }
+            error!(
+                "Unexpected error happened while inserting new game {}",
+                error
+            );
+            Err(status::Custom(
+                Status::InternalServerError,
+                format!("Unexpected error while inserting the game"),
+            ))
+        }
+    }
 }
