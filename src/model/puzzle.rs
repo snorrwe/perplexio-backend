@@ -30,9 +30,9 @@ impl Puzzle {
         unsafe {
             table.set_len(col * row);
         }
-        for chr in table.iter_mut() {
+        table.iter_mut().for_each(|chr| {
             *chr = '\0';
-        }
+        });
         Puzzle {
             table: table,
             columns: col,
@@ -41,8 +41,40 @@ impl Puzzle {
         }
     }
 
+    /// Designed to turn a json rendered puzzle back to a Puzzle model
+    pub fn from_table(
+        table: Vec<String>,
+        col: usize,
+        row: usize,
+        solutions: Vec<Vec<usize>>,
+    ) -> Puzzle {
+        let table = table.iter().flat_map(|row| row.chars()).collect();
+        Puzzle {
+            table: table,
+            columns: col,
+            rows: row,
+            solutions: solutions,
+        }
+    }
+
     pub fn get_table(&self) -> &Vec<char> {
         &self.table
+    }
+
+    /// Get the table as a vector of strings
+    /// Where each entry is a row
+    /// From top row to bottom
+    pub fn render_table(&self) -> Vec<String> {
+        let mut result = vec![];
+        result.reserve(self.rows);
+        for r in 0..self.rows {
+            let row = self.table[self.columns * r..self.columns * (r + 1)]
+                .iter()
+                .map(|c| *c)
+                .collect::<String>();
+            result.push(row);
+        }
+        result
     }
 
     pub fn get_shape(&self) -> (usize, usize) {
@@ -289,5 +321,27 @@ mod test {
         .collect();
         let puzzle = Puzzle::from_words(words, 1000).expect("Failed to generate");
         println!("{}", puzzle);
+    }
+
+    #[test]
+    fn test_rendering() {
+        let table = "
+            123
+            456
+            "
+        .chars()
+        .filter(|c| b'0' <= *c as u8 && *c as u8 <= b'9')
+        .collect();
+
+        let puzzle = Puzzle {
+            table: table,
+            columns: 3,
+            rows: 2,
+            solutions: vec![],
+        };
+
+        let rendered = puzzle.render_table();
+
+        assert_eq!(rendered, vec!["123", "456"]);
     }
 }

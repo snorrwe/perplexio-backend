@@ -81,7 +81,7 @@ pub fn post_game(
     let puzzle = Puzzle::from_words(game.words.clone(), 500).expect("Failed to create puzzle");
     let (columns, rows) = puzzle.get_shape();
     let json = json!({
-        "table": puzzle.get_table().iter().map(|c|*c).collect::<String>(),
+        "table": puzzle.render_table(),
         "columns":  columns,
         "rows":  rows,
         "solution": puzzle.get_solutions()
