@@ -15,9 +15,6 @@ script:
 
 deploy:
   provider: script
-  script:
-    - docker build -t frenetiq/perplexio-backend .
-    - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-    - docker push frenetiq/perplexio-backend
+  script: bash docker-deploy.sh
   on:
     branch: master
