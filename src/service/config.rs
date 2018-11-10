@@ -5,6 +5,7 @@ pub struct Config {
     pub google_client_secret: String,
     pub postgres_url: String,
     pub oauth_redirect_url: String,
+    pub allowed_origins: Vec<String>,
 }
 
 impl Config {
@@ -16,6 +17,11 @@ impl Config {
                 .unwrap_or("postgres://postgres:almafa1@localhost:5433".to_string()),
             oauth_redirect_url: env::var("OAUTH_REDIRECT_URL")
                 .unwrap_or("http://localhost:8000/login".to_string()),
+            allowed_origins: env::var("ALLOWED_ORIGINS")
+                .unwrap_or("http://localhost:3000;".to_string())
+                .split(';')
+                .map(|substr| substr.to_string())
+                .collect(),
         }
     }
 }
