@@ -2,6 +2,8 @@ use super::super::service::auth;
 use super::super::service::config;
 use super::super::service::db_client::db_client;
 use super::games;
+use rocket::http::ext::IntoOwned;
+use rocket::http::uri::Absolute;
 use rocket::http::{Cookie, Cookies};
 use rocket::response::Redirect;
 use rocket::State;
@@ -35,13 +37,22 @@ pub fn login(code: String, mut cookies: Cookies, config: State<config::Config>) 
                 )
                 .unwrap();
             add_auth_cookies(&token.access_token, &mut cookies);
-            let uri = uri!(games::get_games);
-            Redirect::to(uri)
+            get_login_redirect(&config)
         }
         None => {
             let uri = uri!(register: token.access_token);
             Redirect::to(uri)
         }
+    }
+}
+
+fn get_login_redirect(config: &config::Config) -> Redirect {
+    if let Some(url) = &config.on_login_redirect {
+        let url: Absolute = Absolute::parse(url.as_str()).unwrap();
+        Redirect::to(url.into_owned())
+    } else {
+        let uri = uri!(games::get_games);
+        Redirect::to(uri)
     }
 }
 
@@ -63,8 +74,7 @@ pub fn register(token: String, mut cookies: Cookies, config: State<config::Confi
         )
         .expect("Failed to insert new user");
     add_auth_cookies(&token, &mut cookies);
-    let uri = uri!(games::get_games);
-    Redirect::to(uri)
+    get_login_redirect(&config)
 }
 
 fn add_auth_cookies(token: &String, cookies: &mut Cookies) {
