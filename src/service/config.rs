@@ -6,16 +6,18 @@ pub struct Config {
     pub postgres_url: String,
     pub oauth_redirect_url: String,
     pub allowed_origins: Vec<String>,
-    pub on_login_redirect: Option<Box<String>>,
+    pub on_login_redirect: Option<String>,
+    pub client_domain: String,
 }
 
 impl Config {
     pub fn get() -> Config {
-        let on_login_redirect = env::var("ON_LOGIN_REDIRECT").unwrap_or("".to_string());
+        let on_login_redirect =
+            env::var("ON_LOGIN_REDIRECT").unwrap_or("http://localhost:3000".to_string());
         let on_login_redirect = if on_login_redirect.is_empty() {
             None
         } else {
-            Some(Box::new(on_login_redirect))
+            Some(on_login_redirect)
         };
 
         Config {
@@ -31,6 +33,7 @@ impl Config {
                 .map(|substr| substr.to_string())
                 .collect(),
             on_login_redirect: on_login_redirect,
+            client_domain: env::var("DOMAIN").unwrap_or("localhost:3000".to_string()),
         }
     }
 }

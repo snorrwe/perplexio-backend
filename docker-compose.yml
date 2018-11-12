@@ -6,6 +6,6 @@ services:
     image: postgres
     restart: always
     environment:
-      POSTGRES_PASSWORD: pgpw
+      POSTGRES_PASSWORD: almafa1
     ports:
       - "5432:5432"
