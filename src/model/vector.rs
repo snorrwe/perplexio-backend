@@ -12,7 +12,6 @@ impl Vector {
     }
 
     pub fn normal(&self) -> Vector {
-        assert!(self.x != 0 || self.y != 0);
         let mut x = 1;
         if self.x != 0 {
             x = self.x.abs();

@@ -182,15 +182,24 @@ impl Puzzle {
                 }
                 result.solutions.push(solution);
             });
-        Self::fill_nulls(&mut result);
+        result.fill_nulls();
         Ok(result)
     }
 
     fn find_minmax(segments: &Vec<(Vector, Vector)>) -> (Vector, Vector) {
+        let mut it = segments.iter();
         let mut min_x: i32 = 0;
         let mut min_y: i32 = 0;
         let mut max_x: i32 = 0;
         let mut max_y: i32 = 0;
+        if let Some(segment) = it.next() {
+            min_x = segment.0.x;
+            min_y = segment.0.y;
+            max_x = segment.0.x;
+            max_y = segment.0.y;
+        }
+        // We iterate on the first one again
+        // deliberately
         segments.iter().for_each(|segment| {
             if min_x > segment.0.x {
                 min_x = segment.0.x;
@@ -259,7 +268,7 @@ impl Puzzle {
         let dir = dirs[rng.gen_range(0, dirs.len())];
 
         let start = Vector::new(rng.gen_range(0, 10), rng.gen_range(0, 10));
-        let dir = dir * word.len() as i32;
+        let dir = dir * (word.len() - 1) as i32;
         let end = start + dir;
         (start, end)
     }
@@ -343,5 +352,25 @@ mod test {
         let rendered = puzzle.render_table();
 
         assert_eq!(rendered, vec!["123", "456"]);
+    }
+
+    #[test]
+    fn test_single_word_produces_minimal_puzzle() {
+        let words = vec!["a".to_string()];
+        let puzzle = Puzzle::from_words(words, 1000).expect("Failed to generate");
+
+        let shape = puzzle.get_shape();
+        assert_eq!(shape.0, 1);
+        assert_eq!(shape.1, 1);
+
+        let words = vec!["abba".to_string()];
+        let puzzle = Puzzle::from_words(words, 1000).expect("Failed to generate");
+
+        let shape = puzzle.get_shape();
+        assert!(shape.0 > 0);
+        assert!(shape.1 > 0);
+        assert!(shape.0 <= 4);
+        assert!(shape.1 <= 4);
+        assert!(shape.0 * shape.1 >= 4);
     }
 }
