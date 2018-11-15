@@ -289,7 +289,7 @@ impl Puzzle {
         let mut rng = thread_rng();
         let dir = dirs[rng.gen_range(0, dirs.len())];
 
-        let start = Vector::new(rng.gen_range(0, 10), rng.gen_range(0, 10));
+        let start = Vector::new(rng.gen_range(0, 5), rng.gen_range(0, 5));
         let dir = dir * (word.len() - 1) as i32;
         let end = start + dir;
         (start, end)
