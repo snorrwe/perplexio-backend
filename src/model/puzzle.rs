@@ -370,6 +370,7 @@ mod test {
             columns: 3,
             rows: 2,
             solutions: vec![],
+            words: vec![],
         };
 
         let rendered = puzzle.render_table();

@@ -138,4 +138,15 @@ mod test {
 
         assert!(!segments_intersecting(start_a, end_a, start_b, end_b));
     }
+
+    #[test]
+    fn test_endpoints_touching_considered_intersecting() {
+        let start_a = Vector { x: -2, y: 3 };
+        let end_a = Vector { x: 2, y: 0 };
+
+        let start_b = Vector { x: 2, y: 0 };
+        let end_b = Vector { x: 6, y: 1 };
+
+        assert!(segments_intersecting(start_a, end_a, start_b, end_b));
+    }
 }
