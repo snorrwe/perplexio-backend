@@ -1,5 +1,6 @@
 use super::vector::{segments_intersecting, Vector};
 use rand::prelude::*;
+use serde_json::Value;
 use std::fmt;
 
 /// Tables are matrices of characters
@@ -10,12 +11,13 @@ use std::fmt;
 /// let table = Table::new(10,10);
 /// let x = table::at(1, 5);
 /// ```
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Puzzle {
     table: Vec<char>,
     columns: usize,
     rows: usize,
-    solutions: Vec<Vec<usize>>,
+    solutions: Vec<(Vector, Vector)>,
+    words: Vec<String>,
 }
 
 #[derive(Serialize, Debug)]
@@ -38,6 +40,7 @@ impl Puzzle {
             columns: col,
             rows: row,
             solutions: vec![],
+            words: vec![],
         }
     }
 
@@ -46,7 +49,8 @@ impl Puzzle {
         table: Vec<String>,
         col: usize,
         row: usize,
-        solutions: Vec<Vec<usize>>,
+        solutions: Vec<(Vector, Vector)>,
+        words: Vec<String>,
     ) -> Puzzle {
         let table = table.iter().flat_map(|row| row.chars()).collect();
         Puzzle {
@@ -54,7 +58,18 @@ impl Puzzle {
             columns: col,
             rows: row,
             solutions: solutions,
+            words: words,
         }
+    }
+
+    pub fn to_json(&self) -> Value {
+        json!({
+            "columns": self.columns,
+            "rows": self.rows,
+            "solutions": self.solutions,
+            "table": self.render_table(),
+            "words": self.words
+        })
     }
 
     pub fn get_table(&self) -> &Vec<char> {
@@ -81,7 +96,7 @@ impl Puzzle {
         (self.columns, self.rows)
     }
 
-    pub fn get_solutions(&self) -> &Vec<Vec<usize>> {
+    pub fn get_solutions(&self) -> &Vec<(Vector, Vector)> {
         &self.solutions
     }
 
@@ -165,6 +180,8 @@ impl Puzzle {
         Self::translate_segments(dir, &mut segments);
 
         let mut result = Puzzle::empty(cols as usize, rows as usize);
+        result.solutions.reserve(words.len());
+        result.words.reserve(words.len());
         words
             .iter()
             .zip(segments.iter())
@@ -172,27 +189,32 @@ impl Puzzle {
                 let dir = segment.1 - segment.0;
                 let dir = dir.normal();
                 let mut current = segment.0;
-                let mut solution = vec![];
                 for chr in word.chars() {
                     let x = current.x as usize;
                     let y = current.y as usize;
                     result.set(x, y, chr);
-                    solution.push(result.index(x, y));
                     current = current + dir;
                 }
+                let solution = if (segment.0.x < segment.1.y)
+                    || (segment.0.x == segment.1.x && segment.0.y < segment.1.y)
+                {
+                    (segment.0, segment.1)
+                } else {
+                    (segment.1, segment.0)
+                };
                 result.solutions.push(solution);
+                result.words.push(word.clone());
             });
         result.fill_nulls();
         Ok(result)
     }
 
     fn find_minmax(segments: &Vec<(Vector, Vector)>) -> (Vector, Vector) {
-        let mut it = segments.iter();
         let mut min_x: i32 = 0;
         let mut min_y: i32 = 0;
         let mut max_x: i32 = 0;
         let mut max_y: i32 = 0;
-        if let Some(segment) = it.next() {
+        if let Some(segment) = segments.iter().next() {
             min_x = segment.0.x;
             min_y = segment.0.y;
             max_x = segment.0.x;
@@ -291,10 +313,11 @@ impl fmt::Display for Puzzle {
             self.columns, self.rows
         )?;
         for s in self.solutions.iter() {
-            for c in s {
-                write!(formatter, " {}", c)?;
-            }
-            write!(formatter, "\n")?;
+            write!(
+                formatter,
+                "({}, {}), ({}, {})\n",
+                s.0.x, s.0.y, s.1.x, s.1.y
+            )?;
         }
         write!(formatter, "\n")?;
         for r in 0..self.rows {

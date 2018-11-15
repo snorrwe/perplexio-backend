@@ -33,11 +33,16 @@ pub fn get_games(config: State<config::Config>) -> Json<Vec<GameId>> {
 }
 
 #[get("/game/<id>")]
-pub fn get_game(id: i32, config: State<config::Config>) -> Option<Json<GameDTO>> {
+pub fn get_game(
+    id: i32,
+    mut cookies: Cookies,
+    config: State<config::Config>,
+) -> Option<Json<GameDTO>> {
+    let current_user = auth::logged_in_user_from_cookie(&mut cookies, &config);
     db_client(&config)
         .query(
             "
-        SELECT g.id, g.name, u.name, g.puzzle
+        SELECT g.id, g.name, u.name, g.puzzle, g.owner_id
         FROM games g
         JOIN users u ON g.owner_id=u.id
         WHERE g.id=$1
@@ -48,8 +53,15 @@ pub fn get_game(id: i32, config: State<config::Config>) -> Option<Json<GameDTO>>
         .iter()
         .map(|row| {
             let mut table: Value = row.get(3);
-            // TODO only pass solution if owner or expired
-            table["solution"].take(); // Remove the solution field
+            let is_owner = if let Some(current_user) = &current_user {
+                current_user.id == row.get::<_, i32>(4)
+            } else {
+                false
+            };
+            if !is_owner {
+                // Remove the solutions field
+                table["solutions"].take();
+            }
             let game = GameDTO {
                 id: GameId {
                     id: row.get(0),
@@ -57,6 +69,7 @@ pub fn get_game(id: i32, config: State<config::Config>) -> Option<Json<GameDTO>>
                     owner: row.get(2),
                 },
                 table: table,
+                is_owner: is_owner,
             };
             Json(game)
         })
@@ -83,13 +96,6 @@ pub fn post_game(
     let transaction = conn.transaction().unwrap();
 
     let puzzle = Puzzle::from_words(game.words.clone(), 500).expect("Failed to create puzzle");
-    let (columns, rows) = puzzle.get_shape();
-    let json = json!({
-        "table": puzzle.render_table(),
-        "columns":  columns,
-        "rows":  rows,
-        "solution": puzzle.get_solutions()
-    });
 
     let res = transaction.query(
         "
@@ -97,7 +103,7 @@ pub fn post_game(
         VALUES ($1, $2, $3)
         RETURNING id;
         ",
-        &[&game.name, &current_user.id, &json],
+        &[&game.name, &current_user.id, &puzzle.to_json()],
     );
 
     match res {
