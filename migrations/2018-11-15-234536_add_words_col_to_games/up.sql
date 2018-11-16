@@ -1,0 +1,8 @@
+ALTER TABLE games
+ADD COLUMN IF NOT EXISTS
+words TEXT[];
+UPDATE games
+SET words=ARRAY[]::text[];
+ALTER TABLE games
+ALTER COLUMN words
+SET NOT NULL;

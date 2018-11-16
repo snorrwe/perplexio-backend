@@ -100,6 +100,10 @@ impl Puzzle {
         &self.solutions
     }
 
+    pub fn get_words(&self) -> &Vec<String> {
+        &self.words
+    }
+
     pub fn at<'a>(&'a self, col: usize, row: usize) -> &'a char {
         assert!(col < self.columns);
         assert!(row < self.rows);

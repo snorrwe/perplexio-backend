@@ -4,6 +4,7 @@ table! {
         name -> Varchar,
         owner_id -> Int4,
         puzzle -> Json,
+        words -> Array<Text>,
     }
 }
 
@@ -15,6 +16,8 @@ table! {
         auth_token -> Nullable<Varchar>,
     }
 }
+
+joinable!(games -> users (owner_id));
 
 allow_tables_to_appear_in_same_query!(
     games,

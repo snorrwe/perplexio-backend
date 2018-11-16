@@ -1,0 +1,2 @@
+ALTER TABLE games
+DROP CONSTRAINT fk_user;

@@ -76,6 +76,48 @@ pub fn get_game(
         .next()
 }
 
+#[post("/games/regenerate_board/<id>")]
+pub fn regenerate_board(
+    id: i32,
+    mut cookies: Cookies,
+    config: State<config::Config>,
+) -> Result<Json<GameDTO>, status::Custom<String>> {
+    let current_user = auth::logged_in_user_from_cookie(&mut cookies, &config);
+    if current_user.is_none() {
+        return Err(status::Custom(
+            Status::Unauthorized,
+            "Log in first".to_string(),
+        ));
+    }
+    let current_user = current_user.unwrap();
+    db_client(&config)
+        .query(
+            "
+        SELECT g.id, g.words, g.owner_id
+        FROM games g
+        JOIN users u ON g.owner_id=u.id
+        WHERE g.id=$1
+        ",
+            &[&id],
+        )
+        .expect("Failed to read games")
+        .iter()
+        .map(|row| {
+            let owner_id: i32 = row.get(2);
+            if owner_id != current_user.id {
+                Err(status::Custom(
+                    Status::Unauthorized,
+                    "You cannot alter someone else's game".to_string(),
+                ))
+            } else {
+                // TODO implemented puzzle update and return the new puzzle
+                unimplemented!()
+            }
+        })
+        .next()
+        .unwrap_or(Err(status::Custom(Status::NotFound, "".to_string())))
+}
+
 #[post("/game", data = "<game>")]
 pub fn post_game(
     game: Json<GameSubmission>,
@@ -96,14 +138,15 @@ pub fn post_game(
     let transaction = conn.transaction().unwrap();
 
     let puzzle = Puzzle::from_words(game.words.clone(), 500).expect("Failed to create puzzle");
+    let words = puzzle.get_words();
 
     let res = transaction.query(
         "
-        INSERT INTO games (name, owner_id, puzzle)
-        VALUES ($1, $2, $3)
+        INSERT INTO games (name, owner_id, puzzle, words)
+        VALUES ($1, $2, $3, $4)
         RETURNING id;
         ",
-        &[&game.name, &current_user.id, &puzzle.to_json()],
+        &[&game.name, &current_user.id, &puzzle.to_json(), &words],
     );
 
     match res {
