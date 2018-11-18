@@ -42,22 +42,22 @@ pub fn get_game(
     db_client(&config)
         .query(
             "
-        SELECT g.id, g.name, u.name, g.puzzle, g.owner_id
-        FROM games g
-        JOIN users u ON g.owner_id=u.id
-        WHERE g.id=$1
-        ",
+            SELECT g.id, g.name, u.name, g.puzzle, g.owner_id
+            FROM games g
+            JOIN users u ON g.owner_id=u.id
+            WHERE g.id=$1
+            ",
             &[&id],
         )
         .expect("Failed to read games")
         .iter()
         .map(|row| {
-            let mut table: Value = row.get(3);
             let is_owner = if let Some(current_user) = &current_user {
                 current_user.id == row.get::<_, i32>(4)
             } else {
                 false
             };
+            let mut table: Value = row.get(3);
             if !is_owner {
                 // Remove the solutions field
                 table["solutions"].take();
@@ -81,7 +81,7 @@ pub fn regenerate_board(
     id: i32,
     mut cookies: Cookies,
     config: State<config::Config>,
-) -> Result<Json<GameDTO>, status::Custom<String>> {
+) -> Result<(), status::Custom<String>> {
     let current_user = auth::logged_in_user_from_cookie(&mut cookies, &config);
     if current_user.is_none() {
         return Err(status::Custom(
@@ -93,11 +93,11 @@ pub fn regenerate_board(
     db_client(&config)
         .query(
             "
-        SELECT g.id, g.words, g.owner_id
-        FROM games g
-        JOIN users u ON g.owner_id=u.id
-        WHERE g.id=$1
-        ",
+            SELECT g.id, g.words, g.owner_id
+            FROM games g
+            JOIN users u ON g.owner_id=u.id
+            WHERE g.id=$1
+            ",
             &[&id],
         )
         .expect("Failed to read games")
@@ -105,17 +105,39 @@ pub fn regenerate_board(
         .map(|row| {
             let owner_id: i32 = row.get(2);
             if owner_id != current_user.id {
-                Err(status::Custom(
+                return Err(status::Custom(
                     Status::Unauthorized,
-                    "You cannot alter someone else's game".to_string(),
-                ))
-            } else {
-                // TODO implemented puzzle update and return the new puzzle
-                unimplemented!()
+                    "You cannot alter someone else's game!".to_string(),
+                ));
             }
+
+            let words: Vec<String> = row.get(1);
+            let puzzle = Puzzle::from_words(words, 500).expect("Failed to create puzzle");
+            let id: i32 = row.get(0);
+
+            let conn = db_client(&config);
+            let transaction = conn.transaction().unwrap();
+
+            transaction
+                .query(
+                    "
+                    UPDATE games
+                    SET puzzle = $1
+                    WHERE id=$2
+                    ",
+                    &[&puzzle.to_json(), &id],
+                )
+                .expect("Failed to update the game");
+            transaction
+                .commit()
+                .expect("Failed to commit the transaction, aborting");
+            Ok(())
         })
         .next()
-        .unwrap_or(Err(status::Custom(Status::NotFound, "".to_string())))
+        .unwrap_or(Err(status::Custom(
+            Status::NotFound,
+            "Game not found".to_string(),
+        )))
 }
 
 #[post("/game", data = "<game>")]
@@ -134,7 +156,6 @@ pub fn post_game(
     let current_user = current_user.unwrap();
 
     let conn = db_client(&config);
-
     let transaction = conn.transaction().unwrap();
 
     let puzzle = Puzzle::from_words(game.words.clone(), 500).expect("Failed to create puzzle");

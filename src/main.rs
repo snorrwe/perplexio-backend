@@ -60,6 +60,7 @@ fn main() {
                 games::get_games,
                 games::get_game,
                 games::post_game,
+                games::regenerate_board,
                 users::login,
                 users::register,
                 users::index,
