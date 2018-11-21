@@ -7,7 +7,7 @@ pub struct GameId {
     pub owner: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GameSubmission {
     pub name: String,
     pub words: Vec<String>,

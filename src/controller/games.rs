@@ -82,6 +82,7 @@ pub fn regenerate_board(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<(), status::Custom<String>> {
+    info!("Regenerate game {}", id);
     let current_user = auth::logged_in_user_from_cookie(&mut cookies, &config);
     if current_user.is_none() {
         return Err(status::Custom(
@@ -146,6 +147,7 @@ pub fn post_game(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<String, status::Custom<String>> {
+    info!("Creating new game {:?}", game);
     let current_user = auth::logged_in_user_from_cookie(&mut cookies, &config);
     if current_user.is_none() {
         return Err(status::Custom(
@@ -161,7 +163,7 @@ pub fn post_game(
     let puzzle = Puzzle::from_words(game.words.clone(), 500).expect("Failed to create puzzle");
     let words = puzzle.get_words();
 
-    let res = transaction.query(
+    let result = transaction.query(
         "
         INSERT INTO games (name, owner_id, puzzle, words)
         VALUES ($1, $2, $3, $4)
@@ -170,7 +172,7 @@ pub fn post_game(
         &[&game.name, &current_user.id, &puzzle.to_json(), &words],
     );
 
-    match res {
+    match result {
         Ok(inserted) => {
             transaction
                 .commit()
