@@ -5,6 +5,8 @@ table! {
         owner_id -> Int4,
         puzzle -> Json,
         words -> Array<Text>,
+        available_from -> Nullable<Timestamptz>,
+        available_to -> Nullable<Timestamptz>,
     }
 }
 

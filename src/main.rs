@@ -16,6 +16,7 @@ extern crate serde_json;
 extern crate rand;
 #[macro_use]
 extern crate log;
+extern crate chrono;
 
 use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
