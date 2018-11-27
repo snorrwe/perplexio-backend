@@ -61,15 +61,28 @@ pub fn get_game(
     config: State<config::Config>,
 ) -> Option<Json<GameDTO>> {
     let current_user = logged_in_user_from_cookie(&mut cookies, &config);
+    let game = get_game_by_user(id, &current_user, &config);
+    if let Some(game) = game {
+        Some(Json(game))
+    } else {
+        None
+    }
+}
+
+fn get_game_by_user(
+    game_id: i32,
+    current_user: &Option<User>,
+    config: &config::Config,
+) -> Option<GameDTO> {
     db_client(&config)
         .query(
             "
-            SELECT g.id, g.name, u.name, g.puzzle, g.owner_id, g.available_from
+            SELECT g.id, g.name, u.name, g.puzzle, g.owner_id, g.available_from, g.available_to
             FROM games g
             JOIN users u ON g.owner_id=u.id
             WHERE g.id=$1
             ",
-            &[&id],
+            &[&game_id],
         )
         .expect("Failed to read games")
         .iter()
@@ -92,6 +105,8 @@ pub fn get_game(
                 // Remove the solutions field
                 table["solutions"].take();
             }
+            let available_from = date_to_string(row.get(5));
+            let available_to = date_to_string(row.get(6));
             let game = GameDTO {
                 id: GameId {
                     id: row.get(0),
@@ -100,10 +115,20 @@ pub fn get_game(
                 },
                 table: table,
                 is_owner: is_owner,
+                available_from: available_from,
+                available_to: available_to,
             };
-            Json(game)
+            game
         })
         .next()
+}
+
+fn date_to_string(date: Option<DateTime<Utc>>) -> Option<String> {
+    if let Some(date) = date {
+        Some(date.to_string())
+    } else {
+        None
+    }
 }
 
 fn is_owner(current_user: &Option<User>, owner_id: i32) -> bool {
@@ -119,8 +144,7 @@ pub fn regenerate_board(
     id: i32,
     mut cookies: Cookies,
     config: State<config::Config>,
-) -> Result<(), Custom<&'static str>> {
-    info!("Regenerate game {}", id);
+) -> Result<Json<GameDTO>, Custom<&'static str>> {
     let current_user = logged_in_user_from_cookie(&mut cookies, &config);
     if current_user.is_none() {
         return Err(Custom(Status::Unauthorized, "Log in first"));
@@ -147,7 +171,7 @@ fn handle_regenerate_board_result(
     row: Row,
     current_user: &User,
     config: &State<config::Config>,
-) -> Result<(), Custom<&'static str>> {
+) -> Result<Json<GameDTO>, Custom<&'static str>> {
     let owner_id: i32 = row.get(2);
     if owner_id != current_user.id {
         return Err(Custom(
@@ -176,7 +200,8 @@ fn handle_regenerate_board_result(
     transaction
         .commit()
         .expect("Failed to commit the transaction, aborting");
-    Ok(())
+    let game = get_game_by_user(id, &Some(current_user.clone()), &config).expect("");
+    Ok(Json(game))
 }
 
 #[post("/game", data = "<game>")]

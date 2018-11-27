@@ -18,4 +18,6 @@ pub struct GameDTO {
     pub id: GameId,
     pub table: Value,
     pub is_owner: bool,
+    pub available_from: Option<String>,
+    pub available_to: Option<String>,
 }
