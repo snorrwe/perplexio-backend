@@ -1,2 +1,2 @@
 web: ./target/release/perplexio-backend
-release: ./target/release/diesel migration run
+release: diesel migration run
