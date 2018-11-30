@@ -31,6 +31,11 @@ use self::service::config::Config;
 
 use dotenv::dotenv;
 
+#[get("/login")]
+fn index() -> &'static str {
+    "hello there"
+}
+
 fn main() {
     dotenv().ok();
     let config = Config::get();
@@ -58,6 +63,7 @@ fn main() {
         .mount(
             "/",
             routes![
+                index,
                 games::get_games,
                 games::get_game,
                 games::post_game,
