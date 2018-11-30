@@ -18,6 +18,7 @@ extern crate rand;
 extern crate log;
 extern crate chrono;
 
+use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
@@ -58,23 +59,31 @@ fn main() {
         allow_credentials: true,
         ..Default::default()
     };
-
-    rocket::ignite()
-        .mount(
-            "/",
-            routes![
-                index,
-                games::get_games,
-                games::get_game,
-                games::post_game,
-                games::regenerate_board,
-                users::login,
-                users::register,
-                users::index,
-            ],
-        )
-        .attach(options)
-        .manage(config)
-        .launch();
+    let app = if config.heroku {
+        let rocket_config = RocketConfig::build(Environment::Production)
+            .address(config.address.clone())
+            .port(config.port)
+            .finalize()
+            .expect("Failed to init custom rocket options");
+        rocket::custom(rocket_config)
+    } else {
+        rocket::ignite()
+    };
+    app.mount(
+        "/",
+        routes![
+            index,
+            games::get_games,
+            games::get_game,
+            games::post_game,
+            games::regenerate_board,
+            users::login,
+            users::register,
+            users::index,
+        ],
+    )
+    .attach(options)
+    .manage(config)
+    .launch();
 }
 

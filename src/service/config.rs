@@ -8,6 +8,9 @@ pub struct Config {
     pub allowed_origins: Vec<String>,
     pub on_login_redirect: Option<String>,
     pub client_domain: String,
+    pub heroku: bool,
+    pub address: String,
+    pub port: u16,
 }
 
 impl Config {
@@ -19,6 +22,9 @@ impl Config {
         } else {
             Some(on_login_redirect)
         };
+        let heroku = env::var("IS_HEROKU").unwrap_or("0".to_string());
+        let heroku = heroku.parse::<i32>().expect("IS_HEROKU must be a number");
+        let heroku = heroku != 0;
 
         Config {
             google_client_id: env::var("GOOGLE_CLIENT_ID")
@@ -36,6 +42,12 @@ impl Config {
                 .collect(),
             on_login_redirect: on_login_redirect,
             client_domain: env::var("DOMAIN").unwrap_or("localhost:3000".to_string()),
+            heroku: heroku,
+            address: env::var("ADDRESS").unwrap_or("0.0.0.0".to_string()),
+            port: env::var("PORT")
+                .unwrap_or("8000".to_string())
+                .parse::<u16>()
+                .expect("Port must be a 16 bit long number"),
         }
     }
 }
