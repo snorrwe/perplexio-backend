@@ -17,7 +17,6 @@ extern crate rand;
 #[macro_use]
 extern crate log;
 extern crate chrono;
-extern crate diesel;
 
 use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
