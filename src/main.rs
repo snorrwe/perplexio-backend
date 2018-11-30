@@ -31,7 +31,7 @@ use self::service::config::Config;
 
 use dotenv::dotenv;
 
-#[get("/login")]
+#[get("/")]
 fn index() -> &'static str {
     "hello there"
 }
