@@ -1,2 +1,2 @@
 web: ./target/release/perplexio-backend
-release: ROCKET_PORT=$PORT
+release: ./target/release/diesel migration run
