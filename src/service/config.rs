@@ -21,8 +21,10 @@ impl Config {
         };
 
         Config {
-            google_client_id: env::var("GOOGLE_CLIENT_ID").unwrap(),
-            google_client_secret: env::var("GOOGLE_CLIENT_SECRET").unwrap(),
+            google_client_id: env::var("GOOGLE_CLIENT_ID")
+                .expect("Google client id must be present!"),
+            google_client_secret: env::var("GOOGLE_CLIENT_SECRET")
+                .expect("Google client secret must be present!"),
             postgres_url: env::var("DATABASE_URL")
                 .unwrap_or("postgres://postgres:almafa1@localhost:5433".to_string()),
             oauth_redirect_url: env::var("OAUTH_REDIRECT_URL")
