@@ -34,7 +34,7 @@ use dotenv::dotenv;
 
 #[get("/")]
 fn index() -> &'static str {
-    "hello there"
+    "- Hello there\n- General Kenobi"
 }
 
 fn main() {
