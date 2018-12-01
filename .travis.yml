@@ -1,20 +1,14 @@
 sudo: required
-
 language: rust
-
 rust:
-  - nightly
-
+- nightly
 cache: cargo
-
-services:
-  - docker
-
 script:
-  - cargo test
-
+- cargo test
 deploy:
-  provider: script
-  script: bash docker-deploy.sh
+  provider: heroku
   on:
     branch: master
+  strategy: git
+  api_key:
+    secure: rGMZlf8MD2I0uPu9fhckSw4SGOROBxCK37hFZJby+cYwMnYGH6lwsjL+Sr2vlSpoC99TPW64VTsbbT6JpzwW3YOHm2oTp37U9VOvURKxCNioUogWvYyNO39nOTX4Y0WlOqKBKR06j3nQsdxcLY6GVxRhFNvRU89TsST1bnfSlsRhC7WjOUzXl5kHyD0q+0yavK1wy13PghGXo35crA20+La+tIHHDADlA+8K5tZ859+q/YsslosbkUg+8aKs9TA1PhiWBE7D9eSzLNYxJ5wi7uZcKhC2CetdEr+je+zuIC01f+nmiABvrupJzivBt/0RoFtxHNwHhnXyROpMzCQvBlO+iPMUymqBWGPJdY4DdAWwN2fSrV0+ZvhLAGJl+cWkKbDibPvFHp1lmKf4OxaJ43ReiBLJ3hw2uriiEVTX3r5qcVIoSxIcXDHI/4C7dQvW6uRlzsnE904+V9F/x55hrJ27iXNTzysx6vow24Oj4c6sPZ5CihJbxdAFcEUhZYbBf65ZGE6rIp84fT/K63uKQSRZswCuF/XocWhGDJthKkvE62nGHbXuHt63zFbnrZvg+zcARtLK3izXIpMhZ4lGgOCRWYIcc72xp5vlHcxYthPj7wiTJKx2VCnQJZkwAk/cmJetAX3Da8xK+dq1OVJbv9jMN1MkU5n3OK/t77qA6DQ=
