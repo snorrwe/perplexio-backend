@@ -374,7 +374,7 @@ mod test {
             table: table,
             columns: 3,
             rows: 2,
-            solutions: vec![],
+            solutions: HashSet::new(),
             words: vec![],
         };
 
