@@ -1,3 +1,4 @@
+use super::super::model::user::UserInfo;
 use super::super::service::auth;
 use super::super::service::config::Config;
 use super::super::service::db_client::db_client;
@@ -7,6 +8,7 @@ use rocket::http::uri::Absolute;
 use rocket::http::{Cookie, Cookies};
 use rocket::response::Redirect;
 use rocket::State;
+use rocket_contrib::json::Json;
 use std::str;
 
 #[get("/login")]
@@ -74,6 +76,14 @@ pub fn register(token: String, mut cookies: Cookies, config: State<Config>) -> R
         .expect("Failed to insert new user");
     add_auth_cookies(&token, &mut cookies);
     get_login_redirect(&config)
+}
+
+#[get("/userinfo")]
+pub fn user_info(mut cookies: Cookies, config: State<Config>) -> Option<Json<UserInfo>> {
+    match auth::logged_in_user_from_cookie(&mut cookies, &config) {
+        Some(user) => Some(Json(UserInfo { name: user.name })),
+        None => None,
+    }
 }
 
 fn add_auth_cookies(token: &String, cookies: &mut Cookies) {

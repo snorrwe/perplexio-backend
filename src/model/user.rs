@@ -5,3 +5,8 @@ pub struct User {
     pub auth_token: Option<String>,
     pub googleid: String,
 }
+
+#[derive(Serialize, Clone, Debug)]
+pub struct UserInfo {
+    pub name: String,
+}

@@ -78,6 +78,7 @@ fn main() {
             games::post_game,
             games::regenerate_board,
             users::login,
+            users::user_info,
             users::register,
             users::index,
         ],
