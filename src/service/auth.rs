@@ -18,7 +18,7 @@ pub fn client(config: &config::Config) -> Config {
         "https://www.googleapis.com/oauth2/v3/token",
     )
     .add_scope("https://www.googleapis.com/auth/userinfo.profile")
-    .set_redirect_url(config.oauth_redirect_url.clone())
+    .set_redirect_url(config.oauth_redirect_url)
     .set_state("1234")
 }
 

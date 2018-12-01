@@ -80,7 +80,6 @@ fn main() {
             users::login,
             users::user_info,
             users::register,
-            users::index,
         ],
     )
     .attach(options)

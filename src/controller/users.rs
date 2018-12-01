@@ -11,20 +11,13 @@ use rocket::State;
 use rocket_contrib::json::Json;
 use std::str;
 
-#[get("/login")]
-pub fn index(mut cookies: Cookies, config: State<Config>) -> Redirect {
-    if auth::logged_in_user_from_cookie(&mut cookies, &config).is_some() {
-        get_login_redirect(&config)
-    } else {
-        let uri = auth::client(&config).authorize_url().to_string();
-        Redirect::to(uri)
-    }
-}
-
 #[get("/login?<code>")]
-pub fn login(code: String, mut cookies: Cookies, config: State<Config>) -> Redirect {
+pub fn login(code: Option<String>, mut cookies: Cookies, config: State<Config>) -> Redirect {
+    if code.is_none() {
+        return get_login_redirect_by_cookie(cookies, config);
+    }
     let client = auth::client(&config);
-    let token = client.exchange_code(code.clone()).unwrap();
+    let token = client.exchange_code(code.unwrap()).unwrap();
     match auth::user(&token.access_token, &config) {
         Some(u) => {
             db_client(&Config::get())
@@ -40,16 +33,22 @@ pub fn login(code: String, mut cookies: Cookies, config: State<Config>) -> Redir
             add_auth_cookies(&token.access_token, &mut cookies);
             get_login_redirect(&config)
         }
-        None => {
-            let uri = uri!(register: token.access_token);
-            Redirect::to(uri)
-        }
+        None => register(token.access_token, cookies, config),
+    }
+}
+
+fn get_login_redirect_by_cookie(mut cookies: Cookies, config: State<Config>) -> Redirect {
+    if auth::logged_in_user_from_cookie(&mut cookies, &config).is_some() {
+        get_login_redirect(&config)
+    } else {
+        let uri = auth::client(&config).authorize_url().to_string();
+        Redirect::to(uri)
     }
 }
 
 fn get_login_redirect(config: &Config) -> Redirect {
     if let Some(url) = &config.on_login_redirect {
-        let url: Absolute = Absolute::parse(url.as_str()).unwrap();
+        let url: Absolute = Absolute::parse(url).unwrap();
         Redirect::to(url.into_owned())
     } else {
         let uri = uri!(games::get_games);
