@@ -74,7 +74,7 @@ fn handle_regenerate_board_result(
     transaction
         .commit()
         .expect("Failed to commit the transaction, aborting");
-    let game = get_game_by_user(id, &Some(current_user.clone()), &config).expect("");
+    let game = get_game_by_user(id, &current_user, &config).expect("Failed to get game");
     Ok(Json(game))
 }
 
