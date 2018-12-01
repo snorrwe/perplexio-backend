@@ -9,7 +9,6 @@ use rocket::http::{Cookie, Cookies};
 use rocket::response::Redirect;
 use rocket::State;
 use rocket_contrib::json::Json;
-use std::str;
 
 #[get("/login?<code>")]
 pub fn login(code: Option<String>, mut cookies: Cookies, config: State<Config>) -> Redirect {
