@@ -1,6 +1,7 @@
 use super::vector::{segments_intersecting, Vector};
 use rand::prelude::*;
 use serde_json::Value;
+use std::collections::HashSet;
 use std::fmt;
 
 /// Tables are matrices of characters
@@ -16,7 +17,7 @@ pub struct Puzzle {
     table: Vec<char>,
     columns: usize,
     rows: usize,
-    solutions: Vec<(Vector, Vector)>,
+    solutions: HashSet<(Vector, Vector)>,
     words: Vec<String>,
 }
 
@@ -39,7 +40,7 @@ impl Puzzle {
             table: table,
             columns: col,
             rows: row,
-            solutions: vec![],
+            solutions: HashSet::new(),
             words: vec![],
         }
     }
@@ -49,7 +50,7 @@ impl Puzzle {
         table: Vec<String>,
         col: usize,
         row: usize,
-        solutions: Vec<(Vector, Vector)>,
+        solutions: HashSet<(Vector, Vector)>,
         words: Vec<String>,
     ) -> Puzzle {
         let table = table.iter().flat_map(|row| row.chars()).collect();
@@ -96,7 +97,7 @@ impl Puzzle {
         (self.columns, self.rows)
     }
 
-    pub fn get_solutions(&self) -> &Vec<(Vector, Vector)> {
+    pub fn get_solutions(&self) -> &HashSet<(Vector, Vector)> {
         &self.solutions
     }
 
@@ -206,7 +207,7 @@ impl Puzzle {
                 } else {
                     (segment.1, segment.0)
                 };
-                result.solutions.push(solution);
+                result.solutions.insert(solution);
                 result.words.push(word.clone());
             });
         result.fill_nulls();
