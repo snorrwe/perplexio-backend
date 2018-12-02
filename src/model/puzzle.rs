@@ -200,8 +200,8 @@ impl Puzzle {
                     result.set(x, y, chr);
                     current = current + dir;
                 }
-                let solution = if (segment.0.x < segment.1.y)
-                    || (segment.0.x == segment.1.x && segment.0.y < segment.1.y)
+                let solution = if (segment.0.x < segment.1.x)
+                    || (segment.0.x == segment.1.x && segment.0.y <= segment.1.y)
                 {
                     (segment.0, segment.1)
                 } else {
