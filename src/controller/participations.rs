@@ -9,6 +9,15 @@ use rocket::response::status::Custom;
 use rocket::State;
 use rocket_contrib::json::Json;
 
+const SELECT_PARTICIPATIONS: &'static str = "
+SELECT p.user_id, p.game_id, g.name, p.start_time, p.end_time
+FROM game_participations p
+JOIN games g
+ON p.game_id=g.id
+JOIN users u
+ON p.user_id=u.id
+";
+
 #[get("/participations")]
 pub fn get_participations(
     mut cookies: Cookies,
@@ -19,27 +28,19 @@ pub fn get_participations(
         return Err(Custom(Status::NotFound, "Log in first"));
     }
     let current_user = current_user.unwrap();
-    let mut client = db_client(&config);
+    let client = db_client(&config);
     let result = client
         .query(
-            "
-            SELECT g.name, p.start_time, p.end_time
-            FROM game_participations p
-            JOIN games g
-            ON p.game_id=g.id
-            JOIN users u
-            ON p.user_id=u.id
-            WHERE u.id=$1
-            ",
+            &format!("{}{}", SELECT_PARTICIPATIONS, "WHERE u.id=$1"),
             &[&current_user.id],
         )
         .expect("Unexpected error while reading games")
         .iter()
         .map(|row| {
-            let start: Option<DateTime<Utc>> = row.get(1);
-            let end: Option<DateTime<Utc>> = row.get(2);
+            let start: Option<DateTime<Utc>> = row.get(3);
+            let end: Option<DateTime<Utc>> = row.get(4);
             GameParticipationDTO {
-                game_name: row.get(0),
+                game_name: row.get(2),
                 start_time: start.map_or(None, |t| Some(t.to_string())),
                 end_time: end.map_or(None, |t| Some(t.to_string())),
             }
@@ -49,7 +50,32 @@ pub fn get_participations(
     Ok(Json(result))
 }
 
-pub fn update_or_insert_participation(participation: GameParticipation, client: &mut Connection) {
+pub fn get_participation(
+    user: &User,
+    game_id: i32,
+    client: &Connection,
+) -> Option<GameParticipation> {
+    client
+        .query(
+            &format!("{}{}", SELECT_PARTICIPATIONS, "WHERE u.id=$1 AND g.id=$2"),
+            &[&user.id, &game_id],
+        )
+        .expect("Unexpected error while reading games")
+        .iter()
+        .map(|row| {
+            let start: Option<DateTime<Utc>> = row.get(3);
+            let end: Option<DateTime<Utc>> = row.get(4);
+            GameParticipation {
+                user_id: row.get(0),
+                game_id: row.get(1),
+                start_time: start,
+                end_time: end,
+            }
+        })
+        .next()
+}
+
+pub fn update_or_insert_participation(participation: GameParticipation, client: &Connection) {
     let insert_query = "
         INSERT INTO game_participations AS gp (user_id, game_id, start_time, end_time)
         VALUES ($1, $2, $3, $4)

@@ -1,8 +1,10 @@
 use super::super::super::model::game::{GameDTO, GameId};
+use super::super::super::model::participation::GameParticipation;
 use super::super::super::model::user::User;
 use super::super::super::service::auth::logged_in_user_from_cookie;
 use super::super::super::service::config;
 use super::super::super::service::db_client::db_client;
+use super::super::participations::{get_participation, update_or_insert_participation};
 use super::super::solutions::get_users_solutions;
 use chrono::{DateTime, Utc};
 use rocket::http::{Cookies, Status};
@@ -103,6 +105,18 @@ pub fn get_game_by_user(
             if !is_owner {
                 let solutions = get_users_solutions(&client, &current_user, game_id);
                 table["solutions"] = to_value(solutions).expect("Failed to serialize solutions");
+
+                if get_participation(&current_user, game_id, &client).is_none() {
+                    update_or_insert_participation(
+                        GameParticipation {
+                            user_id: current_user.id,
+                            game_id: game_id,
+                            start_time: Some(Utc::now()),
+                            end_time: None,
+                        },
+                        &client,
+                    );
+                }
             }
             let available_from = date_to_string(row.get(5));
             let available_to = date_to_string(row.get(6));
@@ -133,3 +147,4 @@ fn date_to_string(date: Option<DateTime<Utc>>) -> Option<String> {
 fn is_owner(current_user: &User, owner_id: i32) -> bool {
     current_user.id == owner_id
 }
+
