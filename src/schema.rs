@@ -1,4 +1,14 @@
 table! {
+    game_participations (id) {
+        id -> Int4,
+        user_id -> Int4,
+        game_id -> Int4,
+        start_time -> Nullable<Timestamptz>,
+        end_time -> Nullable<Timestamptz>,
+    }
+}
+
+table! {
     games (id) {
         id -> Int4,
         name -> Varchar,
@@ -31,11 +41,14 @@ table! {
     }
 }
 
+joinable!(game_participations -> games (game_id));
+joinable!(game_participations -> users (user_id));
 joinable!(games -> users (owner_id));
 joinable!(solutions -> games (game_id));
 joinable!(solutions -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
+    game_participations,
     games,
     solutions,
     users,

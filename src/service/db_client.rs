@@ -1,5 +1,7 @@
 use super::config::Config;
-use postgres::{Connection, TlsMode};
+use postgres::{self, TlsMode};
+
+pub type Connection = postgres::Connection;
 
 pub fn db_client(config: &Config) -> Connection {
     let url = &config.postgres_url;

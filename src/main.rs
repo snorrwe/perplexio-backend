@@ -27,8 +27,9 @@ pub mod model;
 pub mod service;
 
 use self::controller::games;
-use self::controller::users;
+use self::controller::participations;
 use self::controller::solutions;
+use self::controller::users;
 use self::service::config::Config;
 
 use dotenv::dotenv;
@@ -83,6 +84,7 @@ fn main() {
             users::register,
             solutions::get_solution_by_game_id,
             solutions::submit_solutions,
+            participations::get_participations,
         ],
     )
     .attach(options)
