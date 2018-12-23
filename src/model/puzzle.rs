@@ -1,17 +1,9 @@
 use super::vector::{segments_intersecting, Vector};
 use rand::prelude::*;
-use serde_json::Value;
+use serde_json::Value as JsonValue;
 use std::collections::HashSet;
 use std::fmt;
 
-/// Tables are matrices of characters
-/// They are column major
-/// so e.g.
-/// ```
-/// // Accessing element [1,5] where 1 is the column, 5 is the row number
-/// let table = Table::new(10,10);
-/// let x = table::at(1, 5);
-/// ```
 #[derive(Serialize, Deserialize)]
 pub struct Puzzle {
     table: Vec<char>,
@@ -63,7 +55,7 @@ impl Puzzle {
         }
     }
 
-    pub fn to_json(&self) -> Value {
+    pub fn to_json(&self) -> JsonValue {
         json!({
             "columns": self.columns,
             "rows": self.rows,
@@ -105,16 +97,27 @@ impl Puzzle {
         &self.words
     }
 
+    /// Tables are matrices of characters
+    /// They are column major
+    /// so e.g.
+    /// ```
+    /// use perplexio::model::puzzle::Puzzle;
+    ///
+    /// let table = Puzzle::empty(10, 10);
+    ///
+    /// // Accessing element [1,5] where 1 is the column, 5 is the row number
+    /// let x = table.at(1, 5);
+    /// ```
     pub fn at<'a>(&'a self, col: usize, row: usize) -> &'a char {
-        assert!(col < self.columns);
-        assert!(row < self.rows);
+        debug_assert!(col < self.columns);
+        debug_assert!(row < self.rows);
         let index = self.index(col, row);
         &self.table[index]
     }
 
     pub fn at_mut<'a>(&'a mut self, col: usize, row: usize) -> &'a mut char {
-        assert!(col < self.columns);
-        assert!(row < self.rows);
+        debug_assert!(col < self.columns);
+        debug_assert!(row < self.rows);
         let index = self.index(col, row);
         &mut self.table[index]
     }
@@ -125,8 +128,8 @@ impl Puzzle {
     }
 
     fn index(&self, col: usize, row: usize) -> usize {
-        assert!(col < self.columns);
-        assert!(row < self.rows);
+        debug_assert!(col < self.columns);
+        debug_assert!(row < self.rows);
         col + self.columns * row
     }
 
@@ -215,43 +218,19 @@ impl Puzzle {
     }
 
     fn find_minmax(segments: &Vec<(Vector, Vector)>) -> (Vector, Vector) {
-        let mut min_x: i32 = 0;
-        let mut min_y: i32 = 0;
-        let mut max_x: i32 = 0;
-        let mut max_y: i32 = 0;
-        if let Some(segment) = segments.iter().next() {
-            min_x = segment.0.x;
-            min_y = segment.0.y;
-            max_x = segment.0.x;
-            max_y = segment.0.y;
-        }
+        let initial = if let Some(segment) = segments.iter().next() {
+            [segment.0.x, segment.0.y, segment.0.x, segment.0.y]
+        } else {
+            [0; 4]
+        };
         // We iterate on the first one again
         // deliberately
-        segments.iter().for_each(|segment| {
-            if min_x > segment.0.x {
-                min_x = segment.0.x;
-            }
-            if min_x > segment.1.x {
-                min_x = segment.1.x;
-            }
-            if min_y > segment.0.y {
-                min_y = segment.0.y;
-            }
-            if min_y > segment.1.y {
-                min_y = segment.1.y;
-            }
-            if max_x < segment.0.x {
-                max_x = segment.0.x;
-            }
-            if max_x < segment.1.x {
-                max_x = segment.1.x;
-            }
-            if max_y < segment.0.y {
-                max_y = segment.0.y;
-            }
-            if max_y < segment.1.y {
-                max_y = segment.1.y;
-            }
+        let [min_x, min_y, max_x, max_y] = segments.iter().fold(initial, |mut result, (v1, v2)| {
+            result[0] = *[result[0], v1.x, v2.x].iter().min().unwrap();
+            result[1] = *[result[1], v1.y, v2.y].iter().min().unwrap();
+            result[2] = *[result[2], v1.x, v2.x].iter().max().unwrap();
+            result[3] = *[result[3], v1.y, v2.y].iter().max().unwrap();
+            result
         });
         (Vector::new(min_x, min_y), Vector::new(max_x, max_y))
     }
@@ -403,3 +382,4 @@ mod test {
         assert!(shape.0 * shape.1 >= 4);
     }
 }
+

@@ -3,45 +3,21 @@
 
 #[macro_use]
 extern crate rocket;
-extern crate postgres;
 extern crate rocket_contrib;
 extern crate rocket_cors;
-#[macro_use]
-extern crate serde_derive;
-extern crate dotenv;
-extern crate oauth2;
-extern crate regex;
-extern crate reqwest;
-#[macro_use]
-extern crate serde_json;
-extern crate rand;
-#[macro_use]
-extern crate log;
-extern crate chrono;
-#[macro_use]
-extern crate diesel;
 
 use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
-pub mod controller;
-pub mod model;
-pub mod service;
-pub mod schema;
-
-use self::controller::games;
-use self::controller::participations;
-use self::controller::solutions;
-use self::controller::users;
-use self::service::config::Config;
+use perplexio::controller;
+use perplexio::controller::games;
+use perplexio::controller::participations;
+use perplexio::controller::solutions;
+use perplexio::controller::users;
+use perplexio::service::config::Config;
 
 use dotenv::dotenv;
-
-#[get("/")]
-fn index() -> &'static str {
-    "- Hello there\n- General Kenobi"
-}
 
 fn main() {
     dotenv().ok();
@@ -78,7 +54,7 @@ fn main() {
     app.mount(
         "/",
         routes![
-            index,
+            controller::index,
             games::get_games,
             games::get_game,
             games::post_game,

@@ -13,13 +13,14 @@ use rocket::response::status::Custom;
 use rocket::State;
 use rocket_contrib::json::Json;
 use serde_json::to_value;
+use super::super::super::schema;
 
 #[get("/games")]
 pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Vec<GameId>> {
-    use super::super::super::schema::games::dsl::*;
-    use super::super::super::schema::games::dsl::{id, name as gname};
-    use super::super::super::schema::users::dsl::name as uname;
-    use super::super::super::schema::users::dsl::*;
+    use self::schema::games::dsl::*;
+    use self::schema::games::dsl::{id, name as gname};
+    use self::schema::users::dsl::name as uname;
+    use self::schema::users::dsl::*;
 
     let current_user = logged_in_user_from_cookie(&mut cookies, &config);
     let client = diesel_client(&config);
@@ -83,10 +84,10 @@ pub fn get_game_by_user(
     current_user: &User,
     config: &config::Config,
 ) -> Option<GameDTO> {
-    use super::super::super::schema::games::dsl::id as gid;
-    use super::super::super::schema::games::dsl::*;
-    use super::super::super::schema::users::dsl::*;
-    use super::super::super::schema::users::dsl::{id as uid, name as uname};
+    use self::schema::games::dsl::id as gid;
+    use self::schema::games::dsl::*;
+    use self::schema::users::dsl::*;
+    use self::schema::users::dsl::{id as uid, name as uname};
 
     let connection = diesel_client(&config);
     games

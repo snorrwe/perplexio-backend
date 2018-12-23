@@ -45,7 +45,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn into_dto(self, owner: String, is_owner:bool) -> GameDTO {
+    pub fn into_dto(self, owner: String, is_owner: bool) -> GameDTO {
         GameDTO {
             id: GameId {
                 id: self.id,
