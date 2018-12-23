@@ -1,4 +1,5 @@
 #![feature(proc_macro_hygiene, decl_macro)]
+#![allow(proc_macro_derive_resolution_fallback)]
 
 #[macro_use]
 extern crate rocket;
@@ -17,6 +18,8 @@ extern crate rand;
 #[macro_use]
 extern crate log;
 extern crate chrono;
+#[macro_use]
+extern crate diesel;
 
 use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
@@ -25,6 +28,7 @@ use rocket_cors::{AllowedHeaders, AllowedOrigins};
 pub mod controller;
 pub mod model;
 pub mod service;
+pub mod schema;
 
 use self::controller::games;
 use self::controller::participations;
