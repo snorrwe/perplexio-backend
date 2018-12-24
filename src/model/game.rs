@@ -11,7 +11,6 @@ pub struct GameId {
     pub id: i32,
     pub name: String,
     pub owner: String,
-    #[serde(rename = "availableFrom")]
     pub available_from: Date,
 }
 
@@ -28,9 +27,7 @@ pub struct GameIdQuery {
 pub struct GameSubmission {
     pub name: String,
     pub words: Vec<String>,
-    #[serde(rename = "availableFrom")]
     pub available_from: Date,
-    #[serde(rename = "availableTo")]
     pub available_to: Date,
 }
 
