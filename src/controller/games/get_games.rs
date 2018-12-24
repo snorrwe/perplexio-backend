@@ -1,10 +1,11 @@
 use super::super::super::model::game::{Game, GameDTO, GameId, GameIdQuery};
 use super::super::super::model::participation::GameParticipation;
 use super::super::super::model::user::User;
+use super::super::super::schema;
 use super::super::super::service::auth::logged_in_user_from_cookie;
 use super::super::super::service::config;
-use super::super::super::service::db_client::{db_client, diesel_client};
-use super::super::participations::{get_participation, update_or_insert_participation};
+use super::super::super::service::db_client::{diesel_client, DieselConnection};
+use super::super::participations::{get_participation, insert_participation};
 use super::super::solutions::get_users_solutions;
 use chrono::Utc;
 use diesel::prelude::*;
@@ -13,7 +14,6 @@ use rocket::response::status::Custom;
 use rocket::State;
 use rocket_contrib::json::Json;
 use serde_json::to_value;
-use super::super::super::schema;
 
 #[get("/games")]
 pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Vec<GameId>> {
@@ -101,7 +101,7 @@ pub fn get_game_by_user(
             {
                 return None;
             } else if !is_owner {
-                insert_solutions_and_participation(config, game_id, current_user, &mut game);
+                insert_solutions_and_participation(&connection, game_id, current_user, &mut game);
             }
             let owner = users
                 .filter(uid.eq(game.owner_id))
@@ -114,10 +114,14 @@ pub fn get_game_by_user(
         .map_or(None, |x| x)
 }
 
-fn insert_solutions_and_participation(config: &config::Config, game_id: i32, current_user: &User, game: &mut Game) {
-    let client = db_client(&config);
+fn insert_solutions_and_participation(
+    client: &DieselConnection,
+    game_id: i32,
+    current_user: &User,
+    game: &mut Game,
+) {
     if get_participation(&current_user, game_id, &client).is_none() {
-        update_or_insert_participation(
+        insert_participation(
             GameParticipation {
                 user_id: current_user.id,
                 game_id: game_id,

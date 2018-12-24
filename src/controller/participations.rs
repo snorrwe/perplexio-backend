@@ -1,9 +1,15 @@
-use super::super::model::participation::{GameParticipation, GameParticipationDTO};
+use super::super::model::participation::{
+    GameParticipation, GameParticipationDTO, GameParticipationEntity,
+};
 use super::super::model::user::User;
 use super::super::service::auth::logged_in_user_from_cookie;
 use super::super::service::config::Config;
-use super::super::service::db_client::{db_client, Connection};
+use super::super::service::db_client::{db_client, Connection, DieselConnection};
 use chrono::{DateTime, Utc};
+use diesel::insert_into;
+use diesel::prelude::*;
+use diesel::ExpressionMethods;
+use diesel::RunQueryDsl;
 use rocket::http::{Cookies, Status};
 use rocket::response::status::Custom;
 use rocket::State;
@@ -53,53 +59,23 @@ pub fn get_participations(
 pub fn get_participation(
     user: &User,
     game_id: i32,
-    client: &Connection,
-) -> Option<GameParticipation> {
-    client
-        .query(
-            &format!("{}{}", SELECT_PARTICIPATIONS, "WHERE u.id=$1 AND g.id=$2"),
-            &[&user.id, &game_id],
-        )
-        .expect("Unexpected error while reading games")
-        .iter()
-        .map(|row| {
-            let start: Option<DateTime<Utc>> = row.get(3);
-            let end: Option<DateTime<Utc>> = row.get(4);
-            GameParticipation {
-                user_id: row.get(0),
-                game_id: row.get(1),
-                start_time: start,
-                end_time: end,
-            }
-        })
-        .next()
+    client: &DieselConnection,
+) -> Option<GameParticipationEntity> {
+    use super::super::schema::game_participations::dsl::game_id as gid;
+    use super::super::schema::game_participations::dsl::*;
+
+    game_participations
+        .filter(user_id.eq(user.id).and(gid.eq(game_id)))
+        .get_result(client)
+        .ok()
 }
 
-pub fn update_or_insert_participation(participation: GameParticipation, client: &Connection) {
-    let insert_query = "
-        INSERT INTO game_participations AS gp (user_id, game_id, start_time, end_time)
-        VALUES ($1, $2, $3, $4)
-        ON CONFLICT (user_id, game_id) DO
-        UPDATE 
-        SET
-            start_time=COALESCE($3, gp.start_time),
-            end_time=COALESCE($4, gp.end_time)
-        WHERE gp.user_id=$1 AND gp.game_id=$2
-        ";
+pub fn insert_participation(participation: GameParticipation, client: &DieselConnection) {
+    use super::super::schema::game_participations::dsl::*;
 
-    let transaction = client.transaction().expect("Failed to start transaction");
-    transaction
-        .query(
-            insert_query,
-            &[
-                &participation.user_id,
-                &participation.game_id,
-                &participation.start_time,
-                &participation.end_time,
-            ],
-        )
+    insert_into(game_participations)
+        .values(&participation)
+        .execute(client)
         .expect("Failed to insert participation");
-
-    transaction.commit().expect("Failed to commit transaction");
 }
 

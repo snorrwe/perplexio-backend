@@ -4,6 +4,7 @@ use diesel::Connection as DC;
 use postgres::{self, TlsMode};
 
 pub type Connection = postgres::Connection;
+pub type DieselConnection = PgConnection;
 
 pub fn db_client(config: &Config) -> Connection {
     let url = &config.postgres_url;
