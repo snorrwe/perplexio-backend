@@ -1,6 +1,7 @@
 use std::ops;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[serde(rename_all = "camelCase")]
 pub struct Vector {
     pub x: i32,
     pub y: i32,

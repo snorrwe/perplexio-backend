@@ -11,6 +11,7 @@ pub struct GameParticipation {
 }
 
 #[derive(Serialize, Queryable)]
+#[serde(rename_all = "camelCase")]
 pub struct GameParticipationDTO {
     pub game_id: i32,
     pub game_name: String,

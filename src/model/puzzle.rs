@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use std::fmt;
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Puzzle {
     table: Vec<char>,
     columns: usize,

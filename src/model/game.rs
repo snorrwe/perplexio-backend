@@ -1,15 +1,17 @@
 #![allow(proc_macro_derive_resolution_fallback)]
+use super::super::schema::games;
 use chrono::{DateTime, Utc};
 use serde_json::Value;
-use super::super::schema::games;
 
 pub type Date = Option<DateTime<Utc>>;
 
 #[derive(Serialize, Queryable)]
+#[serde(rename_all = "camelCase")]
 pub struct GameId {
     pub id: i32,
     pub name: String,
     pub owner: String,
+    #[serde(rename = "availableFrom")]
     pub available_from: Date,
 }
 
@@ -22,14 +24,18 @@ pub struct GameIdQuery {
 }
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct GameSubmission {
     pub name: String,
     pub words: Vec<String>,
+    #[serde(rename = "availableFrom")]
     pub available_from: Date,
+    #[serde(rename = "availableTo")]
     pub available_to: Date,
 }
 
 #[derive(Deserialize, AsChangeset)]
+#[serde(rename_all = "camelCase")]
 #[table_name = "games"]
 pub struct GameUpdateForm {
     pub name: Option<String>,
@@ -38,6 +44,7 @@ pub struct GameUpdateForm {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GameDTO {
     pub id: GameId,
     pub table: Value,
