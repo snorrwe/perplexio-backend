@@ -32,8 +32,10 @@ pub fn get_solution_by_game_id(
 /// Submit solutions for evaluation
 /// Must be logged in
 /// Each solution is a tuple of vectors
-/// These vectors must be sorted
+/// These tuples must be sorted
 /// Returns if the solution is correct for each solution submitted
+/// Ends the game participation if all solutions were found
+/// Maximum 5 solutions may be submitted at a time
 #[post("/solutions/<game_id>", data = "<solutions>")]
 pub fn submit_solutions(
     game_id: i32,
@@ -41,6 +43,12 @@ pub fn submit_solutions(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<Json<Vec<bool>>, Custom<&'static str>> {
+    if solutions.len() > 5 {
+        return Err(Custom(
+            Status::BadRequest,
+            "Too many solutions for a single request",
+        ));
+    }
     let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
     let puzzle_solutions = get_current_puzzle_solutions(&connection, game_id);
@@ -138,15 +146,16 @@ fn get_number_of_current_solutions(
         .expect("Failed to read solutions") as usize
 }
 
+/// Return all solutions submitted for a game by the user
 pub fn get_users_solutions(
     client: &DieselConnection,
     current_user: &User,
-    gid: i32,
+    game_id: i32,
 ) -> HashSet<SolutionDTO> {
-    use super::super::schema::solutions::dsl::*;
+    use super::super::schema::solutions::dsl::{game_id as gid, solutions, user_id};
 
     solutions
-        .filter(user_id.eq(current_user.id).and(game_id.eq(gid)))
+        .filter(user_id.eq(current_user.id).and(gid.eq(game_id)))
         .get_results::<SolutionEntity>(client)
         .expect("Failed to get solutions")
         .iter()

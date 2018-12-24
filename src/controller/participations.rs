@@ -69,6 +69,8 @@ pub fn get_participation(
     )
 }
 
+/// Returns the game participation belonging to the user
+/// Or None if it does not exist
 pub fn get_participation_inner(
     user: &User,
     game_id: i32,
