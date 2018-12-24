@@ -58,14 +58,13 @@ pub fn get_participations(
 
 pub fn get_participation(
     user: &User,
-    game_id: i32,
+    gid: i32,
     client: &DieselConnection,
 ) -> Option<GameParticipationEntity> {
-    use super::super::schema::game_participations::dsl::game_id as gid;
     use super::super::schema::game_participations::dsl::*;
 
     game_participations
-        .filter(user_id.eq(user.id).and(gid.eq(game_id)))
+        .filter(user_id.eq(user.id).and(game_id.eq(gid)))
         .get_result(client)
         .ok()
 }

@@ -1,4 +1,4 @@
-use super::super::super::model::game::{GameEntity, GameDTO, GameId, GameIdQuery};
+use super::super::super::model::game::{GameDTO, GameEntity, GameId, GameIdQuery};
 use super::super::super::model::participation::GameParticipation;
 use super::super::super::model::user::User;
 use super::super::super::schema;
@@ -34,7 +34,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
             .filter(
                 available_from
                     .le(Utc::now())
-                    .and(available_to.gt(Utc::now()))
+                    .and(available_to.gt(Utc::now()).or(available_to.is_null()))
                     .or(owner_id.eq(current_user.id)),
             )
             .get_results::<GameIdQuery>(&client)
@@ -43,7 +43,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
             .filter(
                 available_from
                     .le(Utc::now())
-                    .and(available_to.gt(Utc::now())),
+                    .and(available_to.gt(Utc::now()).or(available_to.is_null())),
             )
             .get_results::<GameIdQuery>(&client)
     };
@@ -54,7 +54,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
             id: game_id.id,
             name: game_id.name.clone(),
             owner: game_id.owner.clone(),
-            available_from: game_id.available_from.map_or(None, |d| Some(d.to_string())),
+            available_from: game_id.available_from,
         })
         .collect();
     Json(result)
@@ -66,12 +66,9 @@ pub fn get_game(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
-    let current_user = logged_in_user_from_cookie(&mut cookies, &config);
-    if current_user.is_none() {
-        return Err(Custom(Status::Unauthorized, "Log in first"));
-    }
-    let current_user = current_user.unwrap();
-    let game = get_game_by_user(id, &current_user, &config);
+    let current_user = logged_in_user!(cookies, config);
+    let connection = diesel_client(&config);
+    let game = get_game_by_user(&connection, id, &current_user);
     if let Some(game) = game {
         Ok(Json(game))
     } else {
@@ -80,24 +77,22 @@ pub fn get_game(
 }
 
 pub fn get_game_by_user(
+    connection: &DieselConnection,
     game_id: i32,
     current_user: &User,
-    config: &config::Config,
 ) -> Option<GameDTO> {
     use self::schema::games::dsl::id as gid;
     use self::schema::games::dsl::*;
     use self::schema::users::dsl::*;
     use self::schema::users::dsl::{id as uid, name as uname};
-
-    let connection = diesel_client(&config);
     games
         .filter(gid.eq(game_id))
-        .get_result::<GameEntity>(&connection)
+        .get_result::<GameEntity>(connection)
         .ok()
         .map(|mut game| {
             let is_owner = game.owner_id == current_user.id;
             if !is_owner
-                && (game.available_from.is_none() || game.available_from.unwrap() < Utc::now())
+                && (game.available_from.is_none() || game.available_from.unwrap() > Utc::now())
             {
                 return None;
             } else if !is_owner {
@@ -106,7 +101,7 @@ pub fn get_game_by_user(
             let owner = users
                 .filter(uid.eq(game.owner_id))
                 .select(uname)
-                .get_result(&connection)
+                .get_result(connection)
                 .expect("Owning user was not found");
             let game = game.into_dto(owner, is_owner);
             Some(game)

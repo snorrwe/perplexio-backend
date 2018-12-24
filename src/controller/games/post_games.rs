@@ -1,9 +1,10 @@
-use super::super::super::model::game::{GameDTO, GameEntity, GameSubmission};
+use super::super::super::model::game::{GameDTO, GameEntity, GameSubmission, GameUpdateForm};
 use super::super::super::model::puzzle::Puzzle;
+use super::super::super::model::user::User;
 use super::super::super::schema;
 use super::super::super::service::auth::logged_in_user_from_cookie;
 use super::super::super::service::config;
-use super::super::super::service::db_client::diesel_client;
+use super::super::super::service::db_client::{diesel_client, DieselConnection};
 use super::get_games::get_game_by_user;
 use diesel::prelude::*;
 use diesel::result::DatabaseErrorKind;
@@ -40,10 +41,33 @@ pub fn regenerate_board(
                 })
                 .expect("Failed to commit transaction");
             let game =
-                get_game_by_user(game_id, &current_user, &config).expect("Failed to get game");
+                get_game_by_user(&connection, game_id, &current_user).expect("Failed to get game");
             info!("Regenerating the board for game [{}] succeeded", game_id);
             Ok(Json(game))
         })
+}
+
+#[put("/game/<game_id>", data = "<game>")]
+pub fn update_game(
+    game_id: i32,
+    game: Json<GameUpdateForm>,
+    mut cookies: Cookies,
+    config: State<config::Config>,
+) -> Result<Json<GameDTO>, Custom<&'static str>> {
+    let current_user = logged_in_user!(cookies, config);
+    info!("Updating game [{}]", game_id);
+    use self::schema::games::dsl::*;
+
+    let connection = diesel_client(&config);
+
+    update(games.filter(id.eq(game_id).and(owner_id.eq(current_user.id))))
+        .set(game.into_inner())
+        .execute(&connection)
+        .expect("Failed to update game");
+
+    let game = get_game_by_user(&connection, game_id, &current_user).expect("Failed to get game");
+    info!("Updating game [{}] succeeded", game_id);
+    Ok(Json(game))
 }
 
 #[post("/game", data = "<game>")]
@@ -51,7 +75,7 @@ pub fn post_game(
     game: Json<GameSubmission>,
     mut cookies: Cookies,
     config: State<config::Config>,
-) -> Result<String, Custom<&'static str>> {
+) -> Result<Json<GameDTO>, Custom<&'static str>> {
     info!("Creating new game {:?}", game);
     let current_user = logged_in_user!(cookies, config);
 
@@ -66,20 +90,26 @@ pub fn post_game(
                 owner_id.eq(current_user.id),
                 words.eq(puzz.get_words()),
                 puzzle.eq(puzz.to_json()),
+                available_from.eq(game.available_from),
+                available_to.eq(game.available_to),
             ))
             .execute(&connection)
     });
 
-    handle_post_game_result(result)
+    handle_post_game_result(result, &connection, &current_user)
 }
 
 fn handle_post_game_result(
     result: Result<usize, DieselError>,
-) -> Result<String, Custom<&'static str>> {
+    connection: &DieselConnection,
+    current_user: &User,
+) -> Result<Json<GameDTO>, Custom<&'static str>> {
     match result {
         Ok(id) => {
             info!("Creation of new game succeeded, id: {}", id);
-            Ok(id.to_string())
+            let game =
+                get_game_by_user(connection, id as i32, &current_user).expect("Failed to get game");
+            Ok(Json(game))
         }
         Err(error) => {
             if let DieselError::DatabaseError(kind, _value) = &error {

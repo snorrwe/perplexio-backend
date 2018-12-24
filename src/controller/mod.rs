@@ -1,5 +1,3 @@
-use super::service::auth::logged_in_user_from_cookie;
-
 #[get("/")]
 pub fn index() -> &'static str {
     "- Hello there\n- General Kenobi"

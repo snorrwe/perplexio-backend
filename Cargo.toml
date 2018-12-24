@@ -17,7 +17,7 @@ regex = "1"
 dotenv = "0.9.0"
 rand = "0.6.0-pre.1"
 log = "0.4"
-chrono = "0.4"
+chrono = { version = "0.4", features=["serde"] }
 diesel = { version = "1.0.0", features = ["postgres", "chrono", "serde_json"] }
 
 [dependencies.postgres]
