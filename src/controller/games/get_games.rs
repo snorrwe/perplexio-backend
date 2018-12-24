@@ -1,4 +1,4 @@
-use super::super::super::model::game::{Game, GameDTO, GameId, GameIdQuery};
+use super::super::super::model::game::{GameEntity, GameDTO, GameId, GameIdQuery};
 use super::super::super::model::participation::GameParticipation;
 use super::super::super::model::user::User;
 use super::super::super::schema;
@@ -92,7 +92,7 @@ pub fn get_game_by_user(
     let connection = diesel_client(&config);
     games
         .filter(gid.eq(game_id))
-        .get_result::<Game>(&connection)
+        .get_result::<GameEntity>(&connection)
         .ok()
         .map(|mut game| {
             let is_owner = game.owner_id == current_user.id;
@@ -118,7 +118,7 @@ fn insert_solutions_and_participation(
     client: &DieselConnection,
     game_id: i32,
     current_user: &User,
-    game: &mut Game,
+    game: &mut GameEntity,
 ) {
     if get_participation(&current_user, game_id, &client).is_none() {
         insert_participation(

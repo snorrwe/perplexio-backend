@@ -4,7 +4,7 @@ use super::super::model::participation::{
 use super::super::model::user::User;
 use super::super::service::auth::logged_in_user_from_cookie;
 use super::super::service::config::Config;
-use super::super::service::db_client::{db_client, Connection, DieselConnection};
+use super::super::service::db_client::{db_client, DieselConnection};
 use chrono::{DateTime, Utc};
 use diesel::insert_into;
 use diesel::prelude::*;

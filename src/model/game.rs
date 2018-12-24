@@ -2,6 +2,8 @@
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 
+pub type Date = Option<DateTime<Utc>>;
+
 #[derive(Serialize, Queryable)]
 pub struct GameId {
     pub id: i32,
@@ -15,13 +17,15 @@ pub struct GameIdQuery {
     pub id: i32,
     pub name: String,
     pub owner: String,
-    pub available_from: Option<DateTime<Utc>>,
+    pub available_from: Date,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct GameSubmission {
     pub name: String,
     pub words: Vec<String>,
+    pub available_from: Option<String>,
+    pub available_to: Option<String>,
 }
 
 #[derive(Serialize)]
@@ -34,17 +38,17 @@ pub struct GameDTO {
 }
 
 #[derive(Queryable)]
-pub struct Game {
+pub struct GameEntity {
     pub id: i32,
     pub name: String,
     pub owner_id: i32,
     pub puzzle: Value,
     pub words: Vec<String>,
-    pub available_from: Option<DateTime<Utc>>,
-    pub available_to: Option<DateTime<Utc>>,
+    pub available_from: Date,
+    pub available_to: Date,
 }
 
-impl Game {
+impl GameEntity {
     pub fn into_dto(self, owner: String, is_owner: bool) -> GameDTO {
         GameDTO {
             id: GameId {

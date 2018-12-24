@@ -76,6 +76,8 @@ pub fn submit_solutions(
     let current_solutions = get_number_of_current_solutions(&connection, &current_user, game_id);
     if current_solutions == puzzle_solutions.len() {
         // TODO: user finished
+        // check if the game competition is still running
+        // update participation
     }
     result
 }
