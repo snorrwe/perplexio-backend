@@ -6,10 +6,12 @@ use super::super::schema;
 use super::super::service::auth::logged_in_user_from_cookie;
 use super::super::service::config::Config;
 use super::super::service::db_client::{diesel_client, DieselConnection};
-use diesel::insert_into;
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use diesel::result::Error as DieselError;
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
+use diesel::{insert_into, update};
 use rocket::http::{Cookies, Status};
 use rocket::response::status::Custom;
 use rocket::State;
@@ -87,5 +89,20 @@ pub fn insert_participation(participation: GameParticipation, client: &DieselCon
         .values(&participation)
         .execute(client)
         .expect("Failed to insert participation");
+}
+
+pub fn end_participation(
+    client: &DieselConnection,
+    user: &User,
+    game_id: i32,
+    end_time: Option<DateTime<Utc>>,
+) -> Result<usize, DieselError> {
+    use super::super::schema::game_participations::dsl::{
+        end_time as et, game_id as gid, game_participations as gp, user_id,
+    };
+    let end_time = end_time.unwrap_or(Utc::now());
+    update(gp.filter(user_id.eq(user.id).and(gid.eq(game_id))))
+        .set(et.eq(end_time))
+        .execute(client)
 }
 

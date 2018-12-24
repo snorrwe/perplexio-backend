@@ -1,9 +1,12 @@
+use super::super::model::participation::GameParticipation;
 use super::super::model::solution::{SolutionDTO, SolutionEntity, SolutionForm};
 use super::super::model::user::User;
 use super::super::model::vector::Vector;
 use super::super::service::auth::logged_in_user_from_cookie;
 use super::super::service::config;
 use super::super::service::db_client::{diesel_client, DieselConnection};
+use super::participations::{end_participation, get_participation_inner, insert_participation};
+use chrono::Utc;
 use diesel::insert_into;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -76,11 +79,29 @@ pub fn submit_solutions(
         .expect("Failed to commit transaction");
     let current_solutions = get_number_of_current_solutions(&connection, &current_user, game_id);
     if current_solutions == puzzle_solutions.len() {
-        // TODO: user finished
-        // check if the game competition is still running
-        // update participation
+        finish_game(&current_user, game_id, &connection);
     }
     result
+}
+
+fn finish_game(current_user: &User, game_id: i32, connection: &DieselConnection) {
+    let participation = get_participation_inner(current_user, game_id, connection);
+    if let Some(participation) = participation {
+        if participation.end_time.is_none() {
+            end_participation(connection, current_user, game_id, None)
+                .expect("Failed to update participation");
+        }
+    } else {
+        insert_participation(
+            GameParticipation {
+                user_id: current_user.id,
+                game_id: game_id,
+                start_time: None,
+                end_time: Some(Utc::now()),
+            },
+            &connection,
+        );
+    }
 }
 
 fn insert_solution(
