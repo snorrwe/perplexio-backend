@@ -20,8 +20,9 @@ pub fn get_solution_by_game_id(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<Json<HashSet<SolutionDTO>>, Custom<&'static str>> {
-    let current_user = logged_in_user!(cookies, config);
-    let result = get_users_solutions(&diesel_client(&config), &current_user, game_id);
+    let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
+    let result = get_users_solutions(&connection, &current_user, game_id);
     Ok(Json(result))
 }
 
@@ -37,8 +38,8 @@ pub fn submit_solutions(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<Json<Vec<bool>>, Custom<&'static str>> {
-    let current_user = logged_in_user!(cookies, config);
     let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
     let puzzle_solutions = get_current_puzzle_solutions(&connection, game_id);
     if puzzle_solutions.is_none() {
         return Err(Custom(Status::NotFound, "Game does not exist"));

@@ -25,8 +25,8 @@ pub fn get_participations(
     };
     use self::schema::games::dsl::{games, id as game_id, name as gname};
 
-    let current_user = logged_in_user!(cookies, config);
     let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
 
     let result = game_participations
         .filter(user_id.eq(current_user.id))
@@ -47,8 +47,8 @@ pub fn get_participation(
     config: State<Config>,
 ) -> Result<Json<GameParticipationDTO>, Custom<&'static str>> {
     use self::schema::games::dsl::{games, id as gid, name as game_name};
-    let current_user = logged_in_user!(cookies, config);
     let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
     let result = get_participation_inner(&current_user, game_id, &connection);
     result.map_or(
         Err(Custom(Status::NotFound, "Participation was not found")),

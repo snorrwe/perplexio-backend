@@ -17,19 +17,21 @@ pub fn index() -> &'static str {
 /// use rocket::response::status::Custom;
 /// use perplexio::service::config::Config;
 /// use perplexio::service::auth::logged_in_user_from_cookie;
+/// use perplexio::service::db_client::diesel_client;
 ///
 /// fn my_controller(mut cookies: Cookies, config: Config) -> Result<(), Custom<&'static str>> {
-///     let current_user = logged_in_user!(cookies, config);
+///     let client = diesel_client(&config);
+///     let current_user = logged_in_user!(client, cookies);
 ///     Ok(())
 /// }
 /// ```
 #[macro_export]
 macro_rules! logged_in_user (
-    ($cookies: ident, $config: ident) => {
+    ($connection: ident, $cookies: ident) => {
         {
             use rocket::http::Status;
             use rocket::response::status::Custom;
-            let current_user = logged_in_user_from_cookie(&mut $cookies, & $config);
+            let current_user = logged_in_user_from_cookie(& $connection, &mut $cookies);
             if current_user.is_none() {
                 return Err(Custom(Status::Unauthorized, "Log in first"));
             }

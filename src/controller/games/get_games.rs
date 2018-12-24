@@ -22,8 +22,8 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
     };
     use self::schema::users::dsl::{name as uname, users};
 
-    let current_user = logged_in_user_from_cookie(&mut cookies, &config);
     let client = diesel_client(&config);
+    let current_user = logged_in_user_from_cookie(&client, &mut cookies);
     let query = games
         .inner_join(users)
         .select((id, gname, uname, available_from))
@@ -66,8 +66,8 @@ pub fn get_game(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
-    let current_user = logged_in_user!(cookies, config);
     let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
     let game = get_game_by_user(&connection, id, &current_user);
     if let Some(game) = game {
         Ok(Json(game))

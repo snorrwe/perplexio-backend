@@ -1,7 +1,7 @@
 use super::super::model::user::UserInfo;
 use super::super::service::auth;
 use super::super::service::config::Config;
-use super::super::service::db_client::db_client;
+use super::super::service::db_client::{db_client, diesel_client};
 use super::games;
 use rocket::http::ext::IntoOwned;
 use rocket::http::uri::Absolute;
@@ -37,7 +37,8 @@ pub fn login(code: Option<String>, mut cookies: Cookies, config: State<Config>) 
 }
 
 fn get_login_redirect_by_cookie(mut cookies: Cookies, config: State<Config>) -> Redirect {
-    if auth::logged_in_user_from_cookie(&mut cookies, &config).is_some() {
+    let connection = diesel_client(&config);
+    if auth::logged_in_user_from_cookie(&connection, &mut cookies).is_some() {
         get_login_redirect(&config)
     } else {
         let uri = auth::client(&config).authorize_url().to_string();
@@ -78,7 +79,8 @@ pub fn register(token: String, mut cookies: Cookies, config: State<Config>) -> R
 
 #[get("/userinfo")]
 pub fn user_info(mut cookies: Cookies, config: State<Config>) -> Option<Json<UserInfo>> {
-    match auth::logged_in_user_from_cookie(&mut cookies, &config) {
+    let connection = diesel_client(&config);
+    match auth::logged_in_user_from_cookie(&connection, &mut cookies) {
         Some(user) => Some(Json(UserInfo { name: user.name })),
         None => None,
     }
@@ -90,3 +92,4 @@ fn add_auth_cookies(token: &String, cookies: &mut Cookies) {
         .finish();
     cookies.add(auth_cookie);
 }
+

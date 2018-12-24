@@ -21,11 +21,11 @@ pub fn regenerate_board(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
-    info!("Regenerating board for game [{}]", game_id);
-    let current_user = logged_in_user!(cookies, config);
     use self::schema::games::dsl::*;
+    info!("Regenerating board for game [{}]", game_id);
 
     let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
 
     games
         .filter(id.eq(game_id))
@@ -54,11 +54,11 @@ pub fn update_game(
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
-    let current_user = logged_in_user!(cookies, config);
-    info!("Updating game [{}]", game_id);
     use self::schema::games::dsl::*;
+    info!("Updating game [{}]", game_id);
 
     let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
 
     update(games.filter(id.eq(game_id).and(owner_id.eq(current_user.id))))
         .set(game.into_inner())
@@ -77,9 +77,9 @@ pub fn post_game(
     config: State<config::Config>,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
     info!("Creating new game {:?}", game);
-    let current_user = logged_in_user!(cookies, config);
 
     let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
 
     let puzz = Puzzle::from_words(game.words.clone(), 500).expect("Failed to create puzzle");
     let result = connection.transaction(|| {

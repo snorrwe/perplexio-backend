@@ -1,6 +1,8 @@
 use super::super::model::user::User;
+use super::super::schema;
 use super::config;
-use super::db_client::db_client;
+use super::db_client::{db_client, DieselConnection};
+use diesel::prelude::*;
 use oauth2::Config;
 use regex::Regex;
 use reqwest;
@@ -24,35 +26,28 @@ pub fn client(config: &config::Config) -> Config {
 
 /// Extract the auth token from the cookies and
 /// get the `User` using the token stored in our database
-pub fn logged_in_user_from_cookie(cookies: &mut Cookies, config: &config::Config) -> Option<User> {
+pub fn logged_in_user_from_cookie(
+    connection: &DieselConnection,
+    cookies: &mut Cookies,
+) -> Option<User> {
     let re = Regex::new("^Bearer ").unwrap();
     cookies
         .get("Authorization")
         .map(|cookie| {
             let token = re.replace(cookie.value(), "").into_owned();
-            logged_in_user(&token, config)
+            logged_in_user(connection, &token)
         })
         .unwrap_or(None)
 }
 
 /// Get the `User` using the token stored in our database
-pub fn logged_in_user(token: &str, config: &config::Config) -> Option<User> {
-    db_client(&config)
-        .query(
-            "SELECT id, name, auth_token, googleid
-             FROM users
-             WHERE auth_token=$1",
-            &[&token],
-        )
-        .expect("Unexpected error while retrieving user data")
-        .iter()
-        .map(|row| User {
-            id: row.get(0),
-            name: row.get(1),
-            auth_token: row.get(2),
-            googleid: row.get(3),
-        })
-        .next()
+pub fn logged_in_user(connection: &DieselConnection, token: &str) -> Option<User> {
+    use self::schema::users::dsl::{auth_token, users};
+
+    users
+        .filter(auth_token.eq(token))
+        .get_result(connection)
+        .ok()
 }
 
 /// Get the User via the Google OAuth API and retrieve the corresponding `User` object or `None` if
@@ -91,3 +86,4 @@ pub fn get_user_from_google(token: &str) -> Value {
 
     serde_json::from_str(&body).expect("Failed to deserialize response")
 }
+
