@@ -66,6 +66,7 @@ fn main() {
             solutions::get_solution_by_game_id,
             solutions::submit_solutions,
             participations::get_participations,
+            participations::get_participation,
         ],
     )
     .attach(options)

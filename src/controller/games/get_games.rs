@@ -5,7 +5,7 @@ use super::super::super::schema;
 use super::super::super::service::auth::logged_in_user_from_cookie;
 use super::super::super::service::config;
 use super::super::super::service::db_client::{diesel_client, DieselConnection};
-use super::super::participations::{get_participation, insert_participation};
+use super::super::participations::{get_participation_inner, insert_participation};
 use super::super::solutions::get_users_solutions;
 use chrono::Utc;
 use diesel::prelude::*;
@@ -17,17 +17,17 @@ use serde_json::to_value;
 
 #[get("/games")]
 pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Vec<GameId>> {
-    use self::schema::games::dsl::*;
-    use self::schema::games::dsl::{id, name as gname};
-    use self::schema::users::dsl::name as uname;
-    use self::schema::users::dsl::*;
+    use self::schema::games::dsl::{
+        available_from, available_to, games, id, name as gname, owner_id,
+    };
+    use self::schema::users::dsl::{name as uname, users};
 
     let current_user = logged_in_user_from_cookie(&mut cookies, &config);
     let client = diesel_client(&config);
     let query = games
         .inner_join(users)
         .select((id, gname, uname, available_from))
-        .limit(20)
+        .limit(100)
         .order_by(available_from.desc());
     let query = if let Some(current_user) = &current_user {
         query
@@ -115,7 +115,7 @@ fn insert_solutions_and_participation(
     current_user: &User,
     game: &mut GameEntity,
 ) {
-    if get_participation(&current_user, game_id, &client).is_none() {
+    if get_participation_inner(&current_user, game_id, &client).is_none() {
         insert_participation(
             GameParticipation {
                 user_id: current_user.id,
