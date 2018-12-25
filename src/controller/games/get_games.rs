@@ -26,7 +26,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
     let current_user = logged_in_user_from_cookie(&client, &mut cookies);
     let query = games
         .inner_join(users)
-        .select((id, gname, uname, available_from))
+        .select((id, gname, uname, available_from, available_to))
         .limit(100)
         .order_by(available_from.desc());
     let query = if let Some(current_user) = &current_user {
@@ -55,6 +55,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
             name: game_id.name.clone(),
             owner: game_id.owner.clone(),
             available_from: game_id.available_from,
+            available_to: game_id.available_to,
         })
         .collect();
     Json(result)

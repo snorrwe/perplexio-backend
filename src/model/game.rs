@@ -12,6 +12,7 @@ pub struct GameId {
     pub name: String,
     pub owner: String,
     pub available_from: Date,
+    pub available_to: Date,
 }
 
 #[derive(Queryable)]
@@ -20,6 +21,7 @@ pub struct GameIdQuery {
     pub name: String,
     pub owner: String,
     pub available_from: Date,
+    pub available_to: Date,
 }
 
 #[derive(Deserialize, Debug)]
@@ -46,8 +48,6 @@ pub struct GameDTO {
     pub id: GameId,
     pub table: Value,
     pub is_owner: bool,
-    pub available_from: Date,
-    pub available_to: Date,
 }
 
 #[derive(Queryable)]
@@ -68,11 +68,10 @@ impl GameEntity {
                 id: self.id,
                 name: self.name,
                 owner: owner,
-                available_from: None,
+                available_from: self.available_from,
+                available_to: self.available_to,
             },
             table: self.puzzle,
-            available_from: self.available_from,
-            available_to: self.available_to,
             is_owner: is_owner,
         }
     }
