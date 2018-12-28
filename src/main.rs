@@ -33,7 +33,7 @@ fn main() {
 
     let options = rocket_cors::Cors {
         allowed_origins: allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post]
+        allowed_methods: vec![Method::Get, Method::Post, Method::Put, Method::Delete]
             .into_iter()
             .map(From::from)
             .collect(),
