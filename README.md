@@ -4,7 +4,7 @@
 
 ## Setting up
 
-- Install Cargo
+- Install [rustup](https://github.com/rust-lang/rustup.rs#installation)
 - Install [libpq](https://www.postgresql.org/docs/9.1/install-windows-libpq.html)
 - Setup your environment for libpq, see [pq-sys](https://github.com/sgrif/pq-sys#building)
 - Install [Diesel](http://diesel.rs/guides/getting-started/) `cargo install diesel --no-default-features --features postgres`
