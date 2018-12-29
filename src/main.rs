@@ -10,11 +10,7 @@ use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
-use perplexio::controller;
-use perplexio::controller::games;
-use perplexio::controller::participations;
-use perplexio::controller::solutions;
-use perplexio::controller::users;
+use perplexio::controller::{self, games, participations, solutions, users};
 use perplexio::service::config::Config;
 
 use dotenv::dotenv;
