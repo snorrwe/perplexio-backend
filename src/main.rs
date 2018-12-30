@@ -3,8 +3,6 @@
 
 #[macro_use]
 extern crate rocket;
-extern crate rocket_contrib;
-extern crate rocket_cors;
 
 use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
