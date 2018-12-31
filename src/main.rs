@@ -50,7 +50,7 @@ fn main() {
             .address(config.address.clone())
             .port(config.port)
             .finalize()
-            .expect("Failed to init custom rocket cors_options");
+            .expect("Failed to init custom rocket options");
         rocket::custom(rocket_config)
     } else {
         rocket::ignite()
