@@ -23,14 +23,24 @@ fn main() {
         .map(|string| string.as_str())
         .collect();
     let (allowed_origins, failed_origins) = AllowedOrigins::some(allowed_origins.as_slice());
-    assert!(failed_origins.is_empty());
+    debug_assert!(failed_origins.is_empty());
+    if !failed_origins.is_empty() {
+        // TODO: log failed origins
+        println!("Failed origins: {:?}", failed_origins);
+    }
 
-    let options = rocket_cors::Cors {
+    let cors_options = rocket_cors::Cors {
         allowed_origins: allowed_origins,
-        allowed_methods: vec![Method::Get, Method::Post, Method::Put, Method::Delete, Method::Options]
-            .into_iter()
-            .map(From::from)
-            .collect(),
+        allowed_methods: vec![
+            Method::Get,
+            Method::Post,
+            Method::Put,
+            Method::Delete,
+            Method::Options,
+        ]
+        .into_iter()
+        .map(From::from)
+        .collect(),
         allowed_headers: AllowedHeaders::all(),
         allow_credentials: true,
         ..Default::default()
@@ -40,7 +50,7 @@ fn main() {
             .address(config.address.clone())
             .port(config.port)
             .finalize()
-            .expect("Failed to init custom rocket options");
+            .expect("Failed to init custom rocket cors_options");
         rocket::custom(rocket_config)
     } else {
         rocket::ignite()
@@ -63,7 +73,7 @@ fn main() {
             participations::get_participation,
         ],
     )
-    .attach(options)
+    .attach(cors_options)
     .manage(config)
     .launch();
 }
