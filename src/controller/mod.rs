@@ -1,6 +1,6 @@
 #[get("/")]
 pub fn index() -> &'static str {
-    "- Hello there\n- General Kenobi"
+    "- Hello there\n- General Kenobi\n- You're a bold one"
 }
 
 /// Gets the currently logged in user or returns `Err(Custom(Status::Unauthorized...))`
