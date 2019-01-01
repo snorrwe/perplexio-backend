@@ -1,4 +1,4 @@
-use super::super::super::model::game::{GameDTO, GameEntity, GameId, GameIdQuery};
+use super::super::super::model::game::{GameDTO, GameEntity, GameId};
 use super::super::super::model::participation::GameParticipation;
 use super::super::super::model::user::User;
 use super::super::super::schema;
@@ -29,7 +29,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
         .select((id, gname, uname, available_from, available_to))
         .limit(100)
         .order_by(available_from.desc());
-    let query = if let Some(current_user) = &current_user {
+    let items = if let Some(current_user) = &current_user {
         query
             .filter(
                 available_from
@@ -37,7 +37,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
                     .and(available_to.gt(Utc::now()).or(available_to.is_null()))
                     .or(owner_id.eq(current_user.id)),
             )
-            .get_results::<GameIdQuery>(&client)
+            .get_results::<GameId>(&client)
     } else {
         query
             .filter(
@@ -45,10 +45,10 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
                     .le(Utc::now())
                     .and(available_to.gt(Utc::now()).or(available_to.is_null())),
             )
-            .get_results::<GameIdQuery>(&client)
+            .get_results::<GameId>(&client)
     };
-    let items = query.unwrap();
     let result = items
+        .unwrap()
         .iter()
         .map(|game_id| GameId {
             id: game_id.id,

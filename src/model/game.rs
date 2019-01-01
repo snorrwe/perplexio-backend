@@ -15,15 +15,6 @@ pub struct GameId {
     pub available_to: Date,
 }
 
-#[derive(Queryable)]
-pub struct GameIdQuery {
-    pub id: i32,
-    pub name: String,
-    pub owner: String,
-    pub available_from: Date,
-    pub available_to: Date,
-}
-
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GameSubmission {
