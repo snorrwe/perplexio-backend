@@ -1,10 +1,8 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 use super::super::schema::games;
-use super::datetime_format;
+use super::{datetime_format, Date};
 use chrono::{DateTime, Utc};
 use serde_json::Value;
-
-pub type Date = Option<DateTime<Utc>>;
 
 #[derive(Serialize, Queryable)]
 #[serde(rename_all = "camelCase")]

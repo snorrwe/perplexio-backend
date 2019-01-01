@@ -5,13 +5,18 @@ pub mod solution;
 pub mod user;
 pub mod vector;
 
+use chrono::{DateTime, Utc};
+
+pub type Date = Option<DateTime<Utc>>;
+
 pub mod datetime_format {
-    use chrono::{DateTime, TimeZone, Utc};
+    use super::Date;
+    use chrono::{TimeZone, Utc};
     use serde::{self, Deserialize, Deserializer, Serializer};
 
     const FORMAT: &'static str = "%Y-%m-%dT%H:%M";
 
-    pub fn serialize<S>(date: &Option<DateTime<Utc>>, serializer: S) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(date: &Date, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -23,7 +28,7 @@ pub mod datetime_format {
         serializer.serialize_str(&s)
     }
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<DateTime<Utc>>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
     where
         D: Deserializer<'de>,
     {
