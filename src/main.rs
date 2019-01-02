@@ -3,6 +3,8 @@
 
 #[macro_use]
 extern crate rocket;
+#[macro_use]
+extern crate log;
 
 use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
@@ -25,8 +27,7 @@ fn main() {
     let (allowed_origins, failed_origins) = AllowedOrigins::some(allowed_origins.as_slice());
     debug_assert!(failed_origins.is_empty());
     if !failed_origins.is_empty() {
-        // TODO: log failed origins
-        println!("Failed origins: {:?}", failed_origins);
+        error!("Failed origins: {:?}", failed_origins);
     }
 
     let cors_options = rocket_cors::Cors {
@@ -37,8 +38,7 @@ fn main() {
             Method::Put,
             Method::Delete,
             Method::Options,
-        ]
-        .into_iter()
+        ].into_iter()
         .map(From::from)
         .collect(),
         allowed_headers: AllowedHeaders::all(),
@@ -72,9 +72,7 @@ fn main() {
             participations::get_participations,
             participations::get_participation,
         ],
-    )
-    .attach(cors_options)
+    ).attach(cors_options)
     .manage(config)
     .launch();
 }
-

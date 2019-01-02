@@ -20,3 +20,11 @@
 ## Migrations
 
 - Use the `diesel` cli tool
+
+## Integration Testing
+
+- Have a PostgreSQL instance up and running
+- Add a user named `test` with password: `almafa1`
+- Add a database named `test` with owner `test`
+- Run migrations `diesel migration --database-url="postgres://test:almafa1@localhost:5432" run`
+- Run `cargo test -- --ignored`

@@ -15,6 +15,8 @@ use rocket::State;
 use rocket_contrib::json::Json;
 use serde_json::to_value;
 
+/// Get a list of the available `GameId`s
+/// If the user is logged in, then their unavailable games are listed as well
 #[get("/games")]
 pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Vec<GameId>> {
     use self::schema::games::dsl::{
@@ -36,16 +38,14 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
                     .le(Utc::now())
                     .and(available_to.gt(Utc::now()).or(available_to.is_null()))
                     .or(owner_id.eq(current_user.id)),
-            )
-            .get_results::<GameId>(&client)
+            ).get_results::<GameId>(&client)
     } else {
         query
             .filter(
                 available_from
                     .le(Utc::now())
                     .and(available_to.gt(Utc::now()).or(available_to.is_null())),
-            )
-            .get_results::<GameId>(&client)
+            ).get_results::<GameId>(&client)
     };
     let result = items
         .unwrap()
@@ -56,11 +56,13 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
             owner: game_id.owner.clone(),
             available_from: game_id.available_from,
             available_to: game_id.available_to,
-        })
-        .collect();
+        }).collect();
     Json(result)
 }
 
+/// Get a specific game by ID
+/// Requires a logged in user
+/// Starts game participation if it's the first time of the user visiting this game
 #[get("/game/<id>")]
 pub fn get_game(
     id: i32,
@@ -77,6 +79,7 @@ pub fn get_game(
     }
 }
 
+/// Get a game by ID and user
 pub fn get_game_by_user(
     connection: &DieselConnection,
     game_id: i32,
@@ -106,8 +109,7 @@ pub fn get_game_by_user(
                 .expect("Owning user was not found");
             let game = game.into_dto(owner, is_owner);
             Some(game)
-        })
-        .map_or(None, |x| x)
+        }).map_or(None, |x| x)
 }
 
 fn insert_solutions_and_participation(
@@ -134,4 +136,3 @@ fn insert_solutions_and_participation(
 fn is_owner(current_user: &User, owner_id: i32) -> bool {
     current_user.id == owner_id
 }
-

@@ -1,7 +1,6 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 use super::super::schema::games;
 use super::{datetime_format, Date};
-use chrono::{DateTime, Utc};
 use serde_json::Value;
 
 #[derive(Serialize, Queryable)]
@@ -32,6 +31,7 @@ pub struct GameSubmission {
 #[table_name = "games"]
 pub struct GameUpdateForm {
     pub name: Option<String>,
+    pub words: Option<Vec<String>>,
     #[serde(with = "datetime_format")]
     pub available_from: Date,
     #[serde(with = "datetime_format")]
@@ -72,4 +72,3 @@ impl GameEntity {
         }
     }
 }
-

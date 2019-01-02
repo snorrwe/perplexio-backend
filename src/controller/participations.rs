@@ -107,4 +107,3 @@ pub fn end_participation(
         .set(et.eq(end_time))
         .execute(client)
 }
-

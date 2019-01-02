@@ -14,4 +14,3 @@ pub fn db_client(config: &Config) -> Connection {
 pub fn diesel_client(config: &Config) -> PgConnection {
     PgConnection::establish(&config.postgres_url).expect("Failed to connect to database")
 }
-

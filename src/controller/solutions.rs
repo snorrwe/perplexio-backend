@@ -79,12 +79,10 @@ pub fn submit_solutions(
                     } else {
                         false
                     }
-                })
-                .collect();
+                }).collect();
             result = Ok(Json(results));
             Ok(())
-        })
-        .expect("Failed to commit transaction");
+        }).expect("Failed to commit transaction");
     let current_solutions = get_number_of_current_solutions(&connection, &current_user, game_id);
     if current_solutions == puzzle_solutions.len() {
         finish_game(&current_user, game_id, &connection);
@@ -128,8 +126,7 @@ fn insert_solution(
             y1: solution.0.y,
             x2: solution.1.x,
             y2: solution.1.y,
-        })
-        .get_result(connection)
+        }).get_result(connection)
 }
 
 fn get_number_of_current_solutions(
@@ -164,8 +161,7 @@ pub fn get_users_solutions(
                 Vector::new(solution.x1, solution.y1),
                 Vector::new(solution.x2, solution.y2),
             )
-        })
-        .collect()
+        }).collect()
 }
 
 fn get_current_puzzle_solutions(client: &DieselConnection, gid: i32) -> Option<Vec<SolutionDTO>> {
@@ -182,4 +178,3 @@ fn get_current_puzzle_solutions(client: &DieselConnection, gid: i32) -> Option<V
             Some(solutions)
         })
 }
-

@@ -1,11 +1,11 @@
-pub use super::vector::Vector;
 use super::super::schema::solutions;
+pub use super::vector::Vector;
 
 pub type SolutionDTO = (Vector, Vector);
 
 #[derive(Insertable)]
-#[table_name="solutions"]
-pub struct SolutionForm{
+#[table_name = "solutions"]
+pub struct SolutionForm {
     pub user_id: i32,
     pub game_id: i32,
     pub x1: i32,
@@ -24,4 +24,3 @@ pub struct SolutionEntity {
     pub x2: i32,
     pub y2: i32,
 }
-

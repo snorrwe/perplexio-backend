@@ -18,8 +18,7 @@ pub fn client(config: &config::Config) -> Config {
         google_client_secret,
         "https://accounts.google.com/o/oauth2/v2/auth",
         "https://www.googleapis.com/oauth2/v3/token",
-    )
-    .add_scope("https://www.googleapis.com/auth/userinfo.profile")
+    ).add_scope("https://www.googleapis.com/auth/userinfo.profile")
     .set_redirect_url(config.oauth_redirect_url.clone())
     .set_state("1234")
 }
@@ -36,8 +35,7 @@ pub fn logged_in_user_from_cookie(
         .map(|cookie| {
             let token = re.replace(cookie.value(), "").into_owned();
             logged_in_user(connection, &token)
-        })
-        .unwrap_or(None)
+        }).unwrap_or(None)
 }
 
 /// Get the `User` using the token stored in our database
@@ -60,16 +58,14 @@ pub fn user(token: &str, config: &config::Config) -> Option<User> {
              FROM users
              WHERE googleid=$1",
             &[&user_info["id"].to_string()],
-        )
-        .expect("Unexpected error while retrieving user data")
+        ).expect("Unexpected error while retrieving user data")
         .iter()
         .map(|row| User {
             id: row.get(0),
             name: row.get(1),
             auth_token: row.get(2),
             googleid: row.get(3),
-        })
-        .next()
+        }).next()
 }
 
 /// Retrieve a user from the Google OAuth API using a token
@@ -86,4 +82,3 @@ pub fn get_user_from_google(token: &str) -> Value {
 
     serde_json::from_str(&body).expect("Failed to deserialize response")
 }
-

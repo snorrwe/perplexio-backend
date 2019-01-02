@@ -44,4 +44,3 @@ pub mod games;
 pub mod participations;
 pub mod solutions;
 pub mod users;
-

@@ -332,8 +332,7 @@ mod test {
             "cerial",
             "great",
             "frootloops",
-        ]
-        .iter()
+        ].iter()
         .map(|w| w.to_string())
         .collect();
         let puzzle = Puzzle::from_words(words, 1000).expect("Failed to generate");
@@ -345,8 +344,7 @@ mod test {
         let table = "
             123
             456
-            "
-        .chars()
+            ".chars()
         .filter(|c| b'0' <= *c as u8 && *c as u8 <= b'9')
         .collect();
 
@@ -383,4 +381,3 @@ mod test {
         assert!(shape.0 * shape.1 >= 4);
     }
 }
-
