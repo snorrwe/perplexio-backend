@@ -50,7 +50,8 @@ fn regenerate_game_board(
         .map_err(|e| {
             error!("{:#?}", e);
             Custom(Status::InternalServerError, "Failed to regenerate puzzle")
-        })?.to_json();
+        })?
+        .to_json();
     update(games.filter(id.eq(game.id)))
         .set(puzzle.eq(puzz))
         .execute(connection)
@@ -123,7 +124,7 @@ fn create_game(
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
     use self::schema::games::dsl::*;
 
-    let puzz = Puzzle::from_words(game.words.clone(), 500)
+    let puzz = Puzzle::from_words(game.words, 500)
         .map_err(|_| Custom(Status::InternalServerError, "Failed to create puzzle"))?;
     let result = insert_into(games)
         .values((
@@ -133,7 +134,8 @@ fn create_game(
             puzzle.eq(puzz.to_json()),
             available_from.eq(game.available_from),
             available_to.eq(game.available_to),
-        )).execute(connection);
+        ))
+        .execute(connection);
 
     handle_post_game_result(result, &connection, &current_user)
 }
@@ -143,81 +145,25 @@ fn handle_post_game_result(
     connection: &DieselConnection,
     current_user: &User,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
-    match result {
-        Ok(id) => {
+    result
+        .map(|id| {
             info!("Creation of new game succeeded, id: {}", id);
             let game =
                 get_game_by_user(connection, id as i32, &current_user).expect("Failed to get game");
-            Ok(Json(game))
-        }
-        Err(error) => {
-            if let DieselError::DatabaseError(kind, _value) = &error {
-                if let DatabaseErrorKind::UniqueViolation = kind {
-                    return Err(Custom(
-                        Status::BadRequest,
-                        "Game with given name already exists",
-                    ));
-                }
+            Json(game)
+        })
+        .map_err(|error| {
+            if let DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) = &error {
+                return Custom(Status::BadRequest, "Game with given name already exists");
             }
             error!(
                 "Unexpected error happened while inserting new game {:#?}",
                 error
             );
-            Err(Custom(
+            Custom(
                 Status::InternalServerError,
                 "Unexpected error while inserting the game",
-            ))
-        }
-    }
+            )
+        })
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use diesel::result::Error;
-
-    #[test]
-    #[ignore]
-    fn test_regenerate_board() {
-        let conn_string = "postgres://test:almafa1@localhost:5432";
-        let conn = DieselConnection::establish(conn_string).expect("Failed to connect to database");
-
-        conn.test_transaction::<_, Error, _>(|| {
-            use self::schema::users::dsl::{auth_token, googleid, id as uid, name as uname, users};
-            // Setup
-            insert_into(users)
-                .values((
-                    uid.eq(123),
-                    uname.eq("Winnie"),
-                    googleid.eq("asd"),
-                    auth_token.eq("asd"),
-                )).execute(&conn)
-                .expect("Failed to create test user");
-
-            create_game(
-                GameSubmission {
-                    name: "game 1".to_string(),
-                    words: ["apple", "orange"]
-                        .into_iter()
-                        .map(|s| s.to_string())
-                        .collect(),
-                    available_from: None,
-                    available_to: None,
-                },
-                &User {
-                    id: 123,
-                    name: "winnie".to_string(),
-                    googleid: "0".to_string(),
-                    auth_token: None,
-                },
-                &conn,
-            ).expect("Failed to create dummy game");
-
-            // let game = get_game_by_user();
-            // TODO
-            unimplemented!();
-
-            Ok(())
-        });
-    }
-}
