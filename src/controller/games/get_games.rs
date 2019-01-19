@@ -88,10 +88,8 @@ pub fn get_game_by_user(
     game_id: i32,
     current_user: &User,
 ) -> Option<GameDTO> {
-    use self::schema::games::dsl::id as gid;
-    use self::schema::games::dsl::*;
-    use self::schema::users::dsl::*;
-    use self::schema::users::dsl::{id as uid, name as uname};
+    use self::schema::games::dsl::{games, id as gid};
+    use self::schema::users::dsl::{id as uid, name as uname, users};
     games
         .filter(gid.eq(game_id))
         .get_result::<GameEntity>(connection)
