@@ -34,11 +34,10 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
     let items = if let Some(current_user) = &current_user {
         query
             .filter(
-                owner_id.eq(current_user.id).or(published.eq(false).and(
-                    available_from
-                        .le(Utc::now())
-                        .and(available_to.gt(Utc::now()).or(available_to.is_null())),
-                )),
+                owner_id.eq(current_user.id).or(published
+                    .eq(true)
+                    .and(available_from.le(Utc::now()))
+                    .and(available_to.gt(Utc::now()).or(available_to.is_null()))),
             )
             .get_results::<GameId>(&client)
     } else {
@@ -46,7 +45,8 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
             .filter(
                 available_from
                     .le(Utc::now())
-                    .and(available_to.gt(Utc::now()).or(available_to.is_null())),
+                    .and(available_to.gt(Utc::now()).or(available_to.is_null()))
+                    .and(published.eq(true)),
             )
             .get_results::<GameId>(&client)
     };
@@ -87,12 +87,20 @@ pub fn get_game_by_user(
         .ok()
         .map(|mut game| {
             let is_owner = game.owner_id == current_user.id;
-            if !is_owner
-                && (game.available_from.is_none() || game.available_from.unwrap() > Utc::now())
-            {
-                return None;
-            } else if !is_owner {
-                insert_solutions_and_participation(&connection, game_id, current_user, &mut game);
+            if !is_owner {
+                if !game.published
+                    || game.available_from.is_none()
+                    || game.available_from.unwrap() > Utc::now()
+                {
+                    return None;
+                } else {
+                    insert_solutions_and_participation(
+                        &connection,
+                        game_id,
+                        current_user,
+                        &mut game,
+                    );
+                }
             }
             let owner = users
                 .filter(uid.eq(game.owner_id))
