@@ -3,7 +3,7 @@ use super::super::schema::games;
 use super::{datetime_format, Date};
 use serde_json::Value;
 
-#[derive(Serialize, Queryable)]
+#[derive(Serialize, Queryable, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GameId {
     pub id: i32,
@@ -38,7 +38,7 @@ pub struct GameUpdateForm {
     pub available_to: Date,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct GameDTO {
     pub id: GameId,

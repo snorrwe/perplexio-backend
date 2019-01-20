@@ -135,13 +135,14 @@ fn create_game(
             available_from.eq(game.available_from),
             available_to.eq(game.available_to),
         ))
-        .execute(connection);
+        .returning(id)
+        .get_result(connection);
 
     handle_post_game_result(result, &connection, &current_user)
 }
 
 fn handle_post_game_result(
-    result: Result<usize, DieselError>,
+    result: Result<i32, DieselError>,
     connection: &DieselConnection,
     current_user: &User,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {

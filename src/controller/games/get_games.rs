@@ -29,7 +29,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
     let query = games
         .inner_join(users)
         .select((id, gname, uname, available_from, available_to))
-        .limit(100)
+        .limit(25)
         .order_by(available_from.desc());
     let items = if let Some(current_user) = &current_user {
         query
