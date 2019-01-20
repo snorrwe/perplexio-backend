@@ -6,6 +6,7 @@ use super::super::super::service::auth::logged_in_user_from_cookie;
 use super::super::super::service::config;
 use super::super::super::service::db_client::{diesel_client, DieselConnection};
 use super::get_games::get_game_by_user;
+use chrono::Utc;
 use diesel::prelude::*;
 use diesel::result::DatabaseErrorKind;
 use diesel::result::Error as DieselError;
@@ -31,7 +32,7 @@ pub fn regenerate_board(
     let current_user = logged_in_user!(connection, cookies);
 
     games
-        .filter(id.eq(game_id).and(owner_id.eq(current_user.id)))
+        .filter(_unpublished_game(game_id, current_user.id))
         .get_result::<GameEntity>(&connection)
         .ok()
         .map_or(Err(Custom(Status::NotFound, "Game not found")), |game| {
@@ -84,13 +85,13 @@ pub fn update_game(
         let puzz = Puzzle::from_words(w.clone(), 500)
             .map_err(|_| Custom(Status::InternalServerError, "Failed to create puzzle"))?
             .to_json();
-        update(games.filter(id.eq(game_id).and(owner_id.eq(current_user.id))))
+        update(games.filter(_unpublished_game(game_id, current_user.id)))
             .set((words.eq(w), puzzle.eq(puzz)))
             .execute(&connection)
             .map_err(|_| Custom(Status::InternalServerError, "Failed to update puzzle"))?;
     }
 
-    update(games.filter(id.eq(game_id).and(owner_id.eq(current_user.id))))
+    update(games.filter(_unpublished_game(game_id, current_user.id)))
         .set(game.into_inner())
         .execute(&connection)
         .map_err(|_| Custom(Status::InternalServerError, "Failed to update game"))?;
@@ -166,5 +167,85 @@ fn handle_post_game_result(
                 "Unexpected error while inserting the game",
             )
         })
+}
+
+/// Publish the given game
+/// Published games are available to the public
+/// Published games must not be altered
+#[put("/game/<game_id>/publish")]
+pub fn publish_game(
+    game_id: i32,
+    mut cookies: Cookies,
+    config: State<config::Config>,
+) -> Result<(), Custom<&'static str>> {
+    info!("Publishing game {:?}", game_id);
+
+    use self::schema::games::dsl::{games, id as gid, owner_id, published};
+    let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
+
+    let game: GameEntity = games
+        .filter(gid.eq(game_id).and(owner_id.eq(current_user.id)))
+        .get_result(&connection)
+        .map_err(|error| {
+            error!("{:?}", error);
+            Custom(Status::NotFound, "Game not found")
+        })?;
+
+    if let Some(avto) = game.available_to {
+        if avto < Utc::now() {
+            let error = Custom(
+                Status::BadRequest,
+                "Game with past competition finish can not be published!",
+            );
+            return Err(error);
+        }
+        if let Some(avfrom) = game.available_from {
+            if avfrom > avto {
+                let error = Custom(
+                    Status::BadRequest,
+                    "Game start time must be before the game finish time!",
+                );
+                return Err(error);
+            }
+        }
+    }
+
+    update(games.filter(gid.eq(game_id).and(owner_id.eq(current_user.id))))
+        .set(published.eq(true))
+        .execute(&connection)
+        .map_err(|error| {
+            error!("{:?}", error);
+            Custom(Status::InternalServerError, "Failed to update games")
+        })
+        .map(|_| {})
+}
+
+/// Returns an expression to be used in diesel `filter` queries
+/// The query specifies games where the `id` matches `game_id` and `owner_id` matches the parameter
+/// and `published` is false
+fn _unpublished_game(
+    game_id: i32,
+    owner_id: i32,
+) -> diesel::expression::operators::And<
+    diesel::expression::operators::And<
+        diesel::expression::operators::Eq<
+            schema::games::columns::id,
+            diesel::expression::bound::Bound<diesel::sql_types::Integer, i32>,
+        >,
+        diesel::expression::operators::Eq<
+            schema::games::columns::owner_id,
+            diesel::expression::bound::Bound<diesel::sql_types::Integer, i32>,
+        >,
+    >,
+    diesel::expression::operators::Eq<
+        schema::games::columns::published,
+        diesel::expression::bound::Bound<diesel::sql_types::Bool, bool>,
+    >,
+> {
+    use self::schema::games::dsl::{id as gid, owner_id as oid, published};
+    gid.eq(game_id)
+        .and(oid.eq(owner_id))
+        .and(published.eq(false))
 }
 

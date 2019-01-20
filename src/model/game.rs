@@ -3,7 +3,7 @@ use super::super::schema::games;
 use super::{datetime_format, Date};
 use serde_json::Value;
 
-#[derive(Serialize, Queryable, Debug)]
+#[derive(Serialize, Queryable, Debug, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GameId {
     pub id: i32,
@@ -13,6 +13,7 @@ pub struct GameId {
     pub available_from: Date,
     #[serde(with = "datetime_format")]
     pub available_to: Date,
+    pub published: bool,
 }
 
 #[derive(Deserialize, Debug)]
@@ -55,6 +56,7 @@ pub struct GameEntity {
     pub words: Vec<String>,
     pub available_from: Date,
     pub available_to: Date,
+    pub published: bool,
 }
 
 impl GameEntity {
@@ -66,9 +68,11 @@ impl GameEntity {
                 owner: owner,
                 available_from: self.available_from,
                 available_to: self.available_to,
+                published: self.published,
             },
             table: self.puzzle,
             is_owner: is_owner,
         }
     }
 }
+

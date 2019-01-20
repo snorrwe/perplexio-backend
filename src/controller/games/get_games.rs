@@ -20,7 +20,7 @@ use serde_json::to_value;
 #[get("/games")]
 pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Vec<GameId>> {
     use self::schema::games::dsl::{
-        available_from, available_to, games, id, name as gname, owner_id,
+        available_from, available_to, games, id, name as gname, owner_id, published,
     };
     use self::schema::users::dsl::{name as uname, users};
 
@@ -28,16 +28,17 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
     let current_user = logged_in_user_from_cookie(&client, &mut cookies);
     let query = games
         .inner_join(users)
-        .select((id, gname, uname, available_from, available_to))
+        .select((id, gname, uname, available_from, available_to, published))
         .limit(25)
         .order_by(available_from.desc());
     let items = if let Some(current_user) = &current_user {
         query
             .filter(
-                available_from
-                    .le(Utc::now())
-                    .and(available_to.gt(Utc::now()).or(available_to.is_null()))
-                    .or(owner_id.eq(current_user.id)),
+                owner_id.eq(current_user.id).or(published.eq(false).and(
+                    available_from
+                        .le(Utc::now())
+                        .and(available_to.gt(Utc::now()).or(available_to.is_null())),
+                )),
             )
             .get_results::<GameId>(&client)
     } else {
@@ -49,17 +50,7 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
             )
             .get_results::<GameId>(&client)
     };
-    let result = items
-        .unwrap()
-        .iter()
-        .map(|game_id| GameId {
-            id: game_id.id,
-            name: game_id.name.clone(),
-            owner: game_id.owner.clone(),
-            available_from: game_id.available_from,
-            available_to: game_id.available_to,
-        })
-        .collect();
+    let result = items.unwrap().iter().cloned().collect();
     Json(result)
 }
 
