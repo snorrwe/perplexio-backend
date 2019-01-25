@@ -61,8 +61,10 @@ pub fn get_games(
             .per_page(25)
             .load_and_count_pages(&client)
     };
-    let (items, total_pages) =
-        items.map_err(|_| Custom(Status::InternalServerError, "Failed to read games"))?;
+    let (items, total_pages) = items.map_err(|err| {
+        error!("Failed to read games {:?}", err);
+        Custom(Status::InternalServerError, "Failed to read games")
+    })?;
     let result = items.iter().cloned().collect();
     let result = Paginated::<GameId>::new(result, total_pages, page);
     Ok(Json(result))
