@@ -4,6 +4,8 @@ use diesel::query_builder::*;
 use diesel::query_dsl::methods::LoadQuery;
 use diesel::sql_types::BigInt;
 
+const DEFAULT_PER_PAGE: i64 = 25;
+
 pub trait Paginate: Sized {
     fn paginate(self, page: i64) -> Paginated<Self>;
 }
@@ -17,8 +19,6 @@ impl<T> Paginate for T {
         }
     }
 }
-
-const DEFAULT_PER_PAGE: i64 = 10;
 
 #[derive(Debug, Clone, Copy, QueryId)]
 pub struct Paginated<T> {
