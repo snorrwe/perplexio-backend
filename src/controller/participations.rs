@@ -17,6 +17,33 @@ use rocket::response::status::Custom;
 use rocket::State;
 use rocket_contrib::json::Json;
 
+/// Get the participations for the given game
+/// Requires user to be the owner
+#[get("/all_participations/<game_id>")]
+pub fn get_all_participations(
+    game_id: i32,
+    mut cookies: Cookies,
+    config: State<Config>,
+) -> Result<Json<Vec<GameParticipationDTO>>, Custom<&'static str>> {
+    use self::schema::game_participations::dsl::{
+        end_time, game_id as gp_gid, game_participations, start_time,
+    };
+    use self::schema::games::dsl::{games, id as gid, name as gname, owner_id};
+
+    let connection = diesel_client(&config);
+    let current_user = logged_in_user!(connection, cookies);
+
+    let result = game_participations
+        .filter(gp_gid.eq(game_id).and(owner_id.eq(current_user.id)))
+        .inner_join(games)
+        .select((gid, gname, start_time, end_time))
+        .order_by(start_time.desc())
+        .get_results::<GameParticipationDTO>(&connection)
+        .map_err(|_| Custom(Status::NotFound, "Game was not found"))?;
+
+    Ok(Json(result))
+}
+
 #[get("/participations")]
 pub fn get_participations(
     mut cookies: Cookies,
@@ -37,7 +64,7 @@ pub fn get_participations(
         .limit(100)
         .order_by(start_time.desc())
         .get_results::<GameParticipationDTO>(&connection)
-        .expect("Failed to read games");
+        .map_err(|_| Custom(Status::InternalServerError, "Failed to read games"))?;
 
     Ok(Json(result))
 }
@@ -107,3 +134,4 @@ pub fn end_participation(
         .set(et.eq(end_time))
         .execute(client)
 }
+

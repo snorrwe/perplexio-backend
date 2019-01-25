@@ -4,6 +4,7 @@ pub mod puzzle;
 pub mod solution;
 pub mod user;
 pub mod vector;
+pub mod paginated;
 
 use chrono::{DateTime, Utc};
 

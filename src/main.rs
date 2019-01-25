@@ -70,6 +70,7 @@ fn main() {
             users::register,
             solutions::get_solution_by_game_id,
             solutions::submit_solutions,
+            participations::get_all_participations,
             participations::get_participations,
             participations::get_participation,
         ],

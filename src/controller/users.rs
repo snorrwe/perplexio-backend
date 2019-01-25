@@ -2,7 +2,6 @@ use super::super::model::user::UserInfo;
 use super::super::service::auth;
 use super::super::service::config::Config;
 use super::super::service::db_client::{db_client, diesel_client};
-use super::games;
 use rocket::http::ext::IntoOwned;
 use rocket::http::uri::Absolute;
 use rocket::http::{Cookie, Cookies};
@@ -27,7 +26,8 @@ pub fn login(code: Option<String>, mut cookies: Cookies, config: State<Config>) 
                     WHERE googleid=$2
                     ",
                     &[&token.access_token, &u.googleid],
-                ).unwrap();
+                )
+                .unwrap();
             add_auth_cookies(&token.access_token, &mut cookies);
             get_login_redirect(&config)
         }
@@ -50,7 +50,7 @@ fn get_login_redirect(config: &Config) -> Redirect {
         let url: Absolute = Absolute::parse(url).unwrap();
         Redirect::to(url.into_owned())
     } else {
-        let uri = uri!(games::get_games);
+        let uri = uri!(user_info);
         Redirect::to(uri)
     }
 }
@@ -70,7 +70,8 @@ pub fn register(token: String, mut cookies: Cookies, config: State<Config>) -> R
                 &token,
                 &user_info["id"].to_string(),
             ],
-        ).expect("Failed to insert new user");
+        )
+        .expect("Failed to insert new user");
     add_auth_cookies(&token, &mut cookies);
     get_login_redirect(&config)
 }
@@ -90,3 +91,4 @@ fn add_auth_cookies(token: &String, cookies: &mut Cookies) {
         .finish();
     cookies.add(auth_cookie);
 }
+

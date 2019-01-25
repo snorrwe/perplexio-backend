@@ -1,10 +1,12 @@
 use super::super::super::model::game::{GameDTO, GameEntity, GameId};
+use super::super::super::model::paginated::Paginated;
 use super::super::super::model::participation::GameParticipation;
 use super::super::super::model::user::User;
 use super::super::super::schema;
 use super::super::super::service::auth::logged_in_user_from_cookie;
 use super::super::super::service::config;
 use super::super::super::service::db_client::{diesel_client, DieselConnection};
+use super::super::super::service::pagination::*;
 use super::super::participations::{get_participation_inner, insert_participation};
 use super::super::solutions::get_users_solutions;
 use chrono::Utc;
@@ -17,8 +19,12 @@ use serde_json::to_value;
 
 /// Get a list of the available `GameId`s
 /// If the user is logged in, then their unavailable games are listed as well
-#[get("/games")]
-pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Vec<GameId>> {
+#[get("/games?<page>")]
+pub fn get_games(
+    page: Option<i64>,
+    mut cookies: Cookies,
+    config: State<config::Config>,
+) -> Result<Json<Paginated<GameId>>, Custom<&'static str>> {
     use self::schema::games::dsl::{
         available_from, available_to, games, id, name as gname, owner_id, published,
     };
@@ -26,10 +32,11 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
 
     let client = diesel_client(&config);
     let current_user = logged_in_user_from_cookie(&client, &mut cookies);
+
+    let page = page.unwrap_or(0);
     let query = games
         .inner_join(users)
         .select((id, gname, uname, available_from, available_to, published))
-        .limit(25)
         .order_by(available_from.desc());
     let items = if let Some(current_user) = &current_user {
         query
@@ -39,7 +46,9 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
                     .and(available_from.le(Utc::now()))
                     .and(available_to.gt(Utc::now()).or(available_to.is_null()))),
             )
-            .get_results::<GameId>(&client)
+            .paginate(page)
+            .per_page(25)
+            .load_and_count_pages(&client)
     } else {
         query
             .filter(
@@ -48,10 +57,15 @@ pub fn get_games(mut cookies: Cookies, config: State<config::Config>) -> Json<Ve
                     .and(available_to.gt(Utc::now()).or(available_to.is_null()))
                     .and(published.eq(true)),
             )
-            .get_results::<GameId>(&client)
+            .paginate(page)
+            .per_page(25)
+            .load_and_count_pages(&client)
     };
-    let result = items.unwrap().iter().cloned().collect();
-    Json(result)
+    let (items, total_pages) =
+        items.map_err(|_| Custom(Status::InternalServerError, "Failed to read games"))?;
+    let result = items.iter().cloned().collect();
+    let result = Paginated::<GameId>::new(result, total_pages, page);
+    Ok(Json(result))
 }
 
 /// Get a specific game by ID
