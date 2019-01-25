@@ -21,7 +21,7 @@ use serde_json::to_value;
 /// If the user is logged in, then their unavailable games are listed as well
 #[get("/games?<page>")]
 pub fn get_games(
-    page: Option<i64>,
+    page: Option<u32>,
     mut cookies: Cookies,
     config: State<config::Config>,
 ) -> Result<Json<Paginated<GameId>>, Custom<&'static str>> {
@@ -33,7 +33,7 @@ pub fn get_games(
     let client = diesel_client(&config);
     let current_user = logged_in_user_from_cookie(&client, &mut cookies);
 
-    let page = page.unwrap_or(0);
+    let page = page.unwrap_or(0) as i64;
     let query = games
         .inner_join(users)
         .select((id, gname, uname, available_from, available_to, published))
