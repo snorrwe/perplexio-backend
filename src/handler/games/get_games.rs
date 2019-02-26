@@ -140,7 +140,7 @@ fn insert_solutions_and_participation(
             GameParticipation {
                 user_id: current_user.id,
                 game_id: game_id,
-                start_time: Some(Utc::now()),
+                start_time: Utc::now(),
                 end_time: None,
             },
             &client,

@@ -102,7 +102,7 @@ fn finish_game(current_user: &User, game_id: i32, connection: &DieselConnection)
             GameParticipation {
                 user_id: current_user.id,
                 game_id: game_id,
-                start_time: None,
+                start_time: Utc::now(),
                 end_time: Some(Utc::now()),
             },
             &connection,

@@ -22,7 +22,7 @@ extern crate reqwest;
 #[macro_use]
 extern crate diesel;
 
-pub mod controller;
+pub mod handler;
 pub mod model;
 pub mod schema;
 pub mod service;

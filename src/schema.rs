@@ -3,8 +3,9 @@ table! {
         id -> Int4,
         user_id -> Int4,
         game_id -> Int4,
-        start_time -> Nullable<Timestamptz>,
+        start_time -> Timestamptz,
         end_time -> Nullable<Timestamptz>,
+        duration -> Nullable<Int4>,
     }
 }
 

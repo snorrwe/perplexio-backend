@@ -26,18 +26,25 @@ pub fn get_all_participations(
     config: State<Config>,
 ) -> Result<Json<Vec<GameParticipationDTO>>, Custom<&'static str>> {
     use self::schema::game_participations::dsl::{
-        end_time, game_id as gp_gid, game_participations, start_time,
+        duration, end_time, game_id as gp_gid, game_participations, start_time,
     };
     use self::schema::games::dsl::{games, id as gid, name as gname, owner_id};
+    use self::schema::users::dsl::{name, users};
 
     let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
 
     let result = game_participations
-        .filter(gp_gid.eq(game_id).and(owner_id.eq(current_user.id)))
+        .filter(
+            gp_gid
+                .eq(game_id)
+                .and(owner_id.eq(current_user.id))
+                .and(duration.is_not_null()),
+        )
         .inner_join(games)
-        .select((gid, gname, start_time, end_time))
-        .order_by(start_time.desc())
+        .inner_join(users)
+        .select((gid, gname, start_time, end_time, name))
+        .order_by(duration.desc())
         .get_results::<GameParticipationDTO>(&connection)
         .map_err(|_| Custom(Status::NotFound, "Game was not found"))?;
 
@@ -53,6 +60,7 @@ pub fn get_participations(
         end_time, game_participations, start_time, user_id,
     };
     use self::schema::games::dsl::{games, id as game_id, name as gname};
+    use self::schema::users::dsl::{name, users};
 
     let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
@@ -60,7 +68,8 @@ pub fn get_participations(
     let result = game_participations
         .filter(user_id.eq(current_user.id))
         .inner_join(games)
-        .select((game_id, gname, start_time, end_time))
+        .inner_join(users)
+        .select((game_id, gname, start_time, end_time, name))
         .limit(100)
         .order_by(start_time.desc())
         .get_results::<GameParticipationDTO>(&connection)
@@ -90,7 +99,7 @@ pub fn get_participation(
                 error!("Unexpected error while getting game name {:?}", name);
                 return Err(Custom(Status::NotFound, "Game was not found"));
             }
-            let participation = participation.into_dto(name.unwrap());
+            let participation = participation.into_dto(name.unwrap(), current_user.name);
             Ok(Json(participation))
         },
     )
@@ -127,11 +136,17 @@ pub fn end_participation(
     end_time: Option<DateTime<Utc>>,
 ) -> Result<usize, DieselError> {
     use super::super::schema::game_participations::dsl::{
-        end_time as et, game_id as gid, game_participations as gp, user_id,
+        duration, end_time as et, game_id as gid, game_participations as gp, start_time as st,
+        user_id,
     };
     let end_time = end_time.unwrap_or(Utc::now());
+    let start_time = gp
+        .filter(user_id.eq(user.id).and(gid.eq(game_id)))
+        .select((st,))
+        .get_result::<(DateTime<Utc>,)>(client)?;
+    let dur = (end_time - start_time.0).num_milliseconds();
     update(gp.filter(user_id.eq(user.id).and(gid.eq(game_id))))
-        .set(et.eq(end_time))
+        .set((et.eq(end_time), duration.eq(dur as i32)))
         .execute(client)
 }
 

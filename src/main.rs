@@ -10,7 +10,7 @@ use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
-use perplexio::controller::{self, games, participations, solutions, users};
+use perplexio::handler::{self, games, participations, solutions, users};
 use perplexio::service::config::Config;
 
 use dotenv::dotenv;
@@ -58,7 +58,7 @@ fn main() {
     app.mount(
         "/",
         routes![
-            controller::index,
+            handler::index,
             games::get_games,
             games::get_game,
             games::post_game,
