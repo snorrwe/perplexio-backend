@@ -1,7 +1,8 @@
+use super::super::fairing::DieselConnection;
 use super::super::model::user::UserInfo;
 use super::super::service::auth;
 use super::super::service::config::Config;
-use super::super::service::db_client::{db_client, diesel_client};
+use super::super::service::db_client::db_client;
 use rocket::http::ext::IntoOwned;
 use rocket::http::uri::Absolute;
 use rocket::http::{Cookie, Cookies};
@@ -10,9 +11,14 @@ use rocket::State;
 use rocket_contrib::json::Json;
 
 #[get("/login?<code>")]
-pub fn login(code: Option<String>, mut cookies: Cookies, config: State<Config>) -> Redirect {
+pub fn login(
+    code: Option<String>,
+    mut cookies: Cookies,
+    config: State<Config>,
+    connection: DieselConnection,
+) -> Redirect {
     if code.is_none() {
-        return get_login_redirect_by_cookie(cookies, config);
+        return get_login_redirect_by_cookie(cookies, config, connection);
     }
     let client = auth::client(&config);
     let token = client.exchange_code(code.unwrap()).unwrap();
@@ -35,8 +41,11 @@ pub fn login(code: Option<String>, mut cookies: Cookies, config: State<Config>) 
     }
 }
 
-fn get_login_redirect_by_cookie(mut cookies: Cookies, config: State<Config>) -> Redirect {
-    let connection = diesel_client(&config);
+fn get_login_redirect_by_cookie(
+    mut cookies: Cookies,
+    config: State<Config>,
+    connection: DieselConnection,
+) -> Redirect {
     if auth::logged_in_user_from_cookie(&connection, &mut cookies).is_some() {
         get_login_redirect(&config)
     } else {
@@ -77,8 +86,10 @@ pub fn register(token: String, mut cookies: Cookies, config: State<Config>) -> R
 }
 
 #[get("/userinfo")]
-pub fn user_info(mut cookies: Cookies, config: State<Config>) -> Option<Json<UserInfo>> {
-    let connection = diesel_client(&config);
+pub fn user_info(
+    mut cookies: Cookies,
+    connection: DieselConnection,
+) -> Option<Json<UserInfo>> {
     match auth::logged_in_user_from_cookie(&connection, &mut cookies) {
         Some(user) => Some(Json(UserInfo { name: user.name })),
         None => None,

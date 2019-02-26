@@ -1,10 +1,9 @@
+use super::super::fairing::DieselConnection;
 use super::super::model::participation::GameParticipation;
 use super::super::model::solution::{SolutionDTO, SolutionEntity, SolutionForm};
 use super::super::model::user::User;
 use super::super::model::vector::Vector;
 use super::super::service::auth::logged_in_user_from_cookie;
-use super::super::service::config;
-use super::super::service::db_client::{diesel_client, DieselConnection};
 use super::participations::{end_participation, get_participation_inner, insert_participation};
 use chrono::Utc;
 use diesel::insert_into;
@@ -12,7 +11,6 @@ use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use rocket::http::{Cookies, Status};
 use rocket::response::status::Custom;
-use rocket::State;
 use rocket_contrib::json::Json;
 use serde_json::{from_value, Value};
 use std::collections::HashSet;
@@ -21,9 +19,8 @@ use std::collections::HashSet;
 pub fn get_solution_by_game_id(
     game_id: i32,
     mut cookies: Cookies,
-    config: State<config::Config>,
+    connection: DieselConnection,
 ) -> Result<Json<HashSet<SolutionDTO>>, Custom<&'static str>> {
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
     let result = get_users_solutions(&connection, &current_user, game_id);
     Ok(Json(result))
@@ -41,7 +38,7 @@ pub fn submit_solutions(
     game_id: i32,
     solutions: Json<Vec<SolutionDTO>>,
     mut cookies: Cookies,
-    config: State<config::Config>,
+    connection: DieselConnection,
 ) -> Result<Json<Vec<bool>>, Custom<&'static str>> {
     if solutions.len() > 5 {
         return Err(Custom(
@@ -49,7 +46,6 @@ pub fn submit_solutions(
             "Too many solutions for a single request",
         ));
     }
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
     let puzzle_solutions = get_current_puzzle_solutions(&connection, game_id);
     if puzzle_solutions.is_none() {
@@ -79,10 +75,12 @@ pub fn submit_solutions(
                     } else {
                         false
                     }
-                }).collect();
+                })
+                .collect();
             result = Ok(Json(results));
             Ok(())
-        }).expect("Failed to commit transaction");
+        })
+        .expect("Failed to commit transaction");
     let current_solutions = get_number_of_current_solutions(&connection, &current_user, game_id);
     if current_solutions == puzzle_solutions.len() {
         finish_game(&current_user, game_id, &connection);
@@ -126,7 +124,8 @@ fn insert_solution(
             y1: solution.0.y,
             x2: solution.1.x,
             y2: solution.1.y,
-        }).get_result(connection)
+        })
+        .get_result(&connection.0)
 }
 
 fn get_number_of_current_solutions(
@@ -139,7 +138,7 @@ fn get_number_of_current_solutions(
     solutions
         .filter(user_id.eq(current_user.id).and(game_id.eq(gid)))
         .count()
-        .first::<i64>(connection)
+        .first::<i64>(&connection.0)
         .expect("Failed to read solutions") as usize
 }
 
@@ -153,7 +152,7 @@ pub fn get_users_solutions(
 
     solutions
         .filter(user_id.eq(current_user.id).and(gid.eq(game_id)))
-        .get_results::<SolutionEntity>(client)
+        .get_results::<SolutionEntity>(&client.0)
         .expect("Failed to get solutions")
         .iter()
         .map(|solution| {
@@ -161,7 +160,8 @@ pub fn get_users_solutions(
                 Vector::new(solution.x1, solution.y1),
                 Vector::new(solution.x2, solution.y2),
             )
-        }).collect()
+        })
+        .collect()
 }
 
 fn get_current_puzzle_solutions(client: &DieselConnection, gid: i32) -> Option<Vec<SolutionDTO>> {
@@ -170,7 +170,7 @@ fn get_current_puzzle_solutions(client: &DieselConnection, gid: i32) -> Option<V
     games
         .filter(id.eq(gid))
         .select(puzzle)
-        .get_result(client)
+        .get_result(&client.0)
         .ok()
         .map_or(None, |mut p: Value| {
             let json = p["solutions"].take();
@@ -178,3 +178,4 @@ fn get_current_puzzle_solutions(client: &DieselConnection, gid: i32) -> Option<V
             Some(solutions)
         })
 }
+

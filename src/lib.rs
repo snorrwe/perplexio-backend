@@ -2,6 +2,7 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 
 extern crate postgres;
+#[macro_use(database)]
 extern crate rocket_contrib;
 extern crate rocket_cors;
 extern crate serde;
@@ -22,7 +23,10 @@ extern crate reqwest;
 #[macro_use]
 extern crate diesel;
 
+pub mod fairing;
+pub mod guard;
 pub mod handler;
 pub mod model;
 pub mod schema;
 pub mod service;
+

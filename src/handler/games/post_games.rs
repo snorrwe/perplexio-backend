@@ -1,10 +1,9 @@
+use super::super::super::fairing::DieselConnection;
 use super::super::super::model::game::{GameDTO, GameEntity, GameSubmission, GameUpdateForm};
 use super::super::super::model::puzzle::Puzzle;
 use super::super::super::model::user::User;
 use super::super::super::schema;
 use super::super::super::service::auth::logged_in_user_from_cookie;
-use super::super::super::service::config;
-use super::super::super::service::db_client::{diesel_client, DieselConnection};
 use super::get_games::get_game_by_user;
 use chrono::Utc;
 use diesel::prelude::*;
@@ -13,7 +12,6 @@ use diesel::result::Error as DieselError;
 use diesel::{insert_into, update};
 use rocket::http::{Cookies, Status};
 use rocket::response::status::Custom;
-use rocket::State;
 use rocket_contrib::json::Json;
 
 /// Regenerate the puzzle of the game specified by ID
@@ -22,17 +20,16 @@ use rocket_contrib::json::Json;
 pub fn regenerate_board(
     game_id: i32,
     mut cookies: Cookies,
-    config: State<config::Config>,
+    connection: DieselConnection,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
     use self::schema::games::dsl::*;
 
     info!("Regenerating board for game [{}]", game_id);
 
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
     games
         .filter(unpublished_game!(game_id, current_user))
-        .get_result::<GameEntity>(&connection)
+        .get_result::<GameEntity>(&connection.0)
         .ok()
         .map_or(Err(Custom(Status::NotFound, "Game not found")), |game| {
             regenerate_game_board(game, &connection, &current_user)
@@ -54,7 +51,7 @@ fn regenerate_game_board(
         .to_json();
     update(games.filter(id.eq(game.id)))
         .set(puzzle.eq(puzz))
-        .execute(connection)
+        .execute(&connection.0)
         .map_err(|e| {
             error!("{:#?}", e);
             Custom(Status::InternalServerError, "Failed to update games")
@@ -72,12 +69,11 @@ pub fn update_game(
     game_id: i32,
     game: Json<GameUpdateForm>,
     mut cookies: Cookies,
-    config: State<config::Config>,
+    connection: DieselConnection,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
     use self::schema::games::dsl::*;
     info!("Updating game [{}]", game_id);
 
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
 
     if let Some(ref w) = game.words {
@@ -86,13 +82,13 @@ pub fn update_game(
             .to_json();
         update(games.filter(unpublished_game!(game_id, current_user)))
             .set((words.eq(w), puzzle.eq(puzz)))
-            .execute(&connection)
+            .execute(&connection.0)
             .map_err(|_| Custom(Status::InternalServerError, "Failed to update puzzle"))?;
     }
 
     update(games.filter(unpublished_game!(game_id, current_user)))
         .set(game.into_inner())
-        .execute(&connection)
+        .execute(&connection.0)
         .map_err(|_| Custom(Status::InternalServerError, "Failed to update game"))?;
 
     let game = get_game_by_user(&connection, game_id, &current_user)
@@ -107,11 +103,10 @@ pub fn update_game(
 pub fn post_game(
     game: Json<GameSubmission>,
     mut cookies: Cookies,
-    config: State<config::Config>,
+    connection: DieselConnection,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
     info!("Creating new game {:?}", game);
 
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
 
     create_game(game.into_inner(), &current_user, &connection)
@@ -136,7 +131,7 @@ fn create_game(
             available_to.eq(game.available_to),
         ))
         .returning(id)
-        .get_result(connection);
+        .get_result(&connection.0);
 
     handle_post_game_result(result, &connection, &current_user)
 }
@@ -175,17 +170,16 @@ fn handle_post_game_result(
 pub fn publish_game(
     game_id: i32,
     mut cookies: Cookies,
-    config: State<config::Config>,
+    connection: DieselConnection,
 ) -> Result<(), Custom<&'static str>> {
     info!("Publishing game {:?}", game_id);
 
     use self::schema::games::dsl::{games, id as gid, owner_id, published};
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
 
     let game: GameEntity = games
         .filter(gid.eq(game_id).and(owner_id.eq(current_user.id)))
-        .get_result(&connection)
+        .get_result(&connection.0)
         .map_err(|error| {
             error!("{:?}", error);
             Custom(Status::NotFound, "Game not found")
@@ -212,7 +206,7 @@ pub fn publish_game(
 
     update(games.filter(gid.eq(game_id).and(owner_id.eq(current_user.id))))
         .set(published.eq(true))
-        .execute(&connection)
+        .execute(&connection.0)
         .map_err(|error| {
             error!("{:?}", error);
             Custom(Status::InternalServerError, "Failed to update games")

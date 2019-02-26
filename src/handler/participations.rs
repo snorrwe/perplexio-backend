@@ -1,11 +1,10 @@
+use super::super::fairing::DieselConnection;
 use super::super::model::participation::{
     GameParticipation, GameParticipationDTO, GameParticipationEntity,
 };
 use super::super::model::user::User;
 use super::super::schema;
 use super::super::service::auth::logged_in_user_from_cookie;
-use super::super::service::config::Config;
-use super::super::service::db_client::{diesel_client, DieselConnection};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -14,7 +13,6 @@ use diesel::RunQueryDsl;
 use diesel::{insert_into, update};
 use rocket::http::{Cookies, Status};
 use rocket::response::status::Custom;
-use rocket::State;
 use rocket_contrib::json::Json;
 
 /// Get the participations for the given game
@@ -23,7 +21,7 @@ use rocket_contrib::json::Json;
 pub fn get_all_participations(
     game_id: i32,
     mut cookies: Cookies,
-    config: State<Config>,
+    connection: DieselConnection,
 ) -> Result<Json<Vec<GameParticipationDTO>>, Custom<&'static str>> {
     use self::schema::game_participations::dsl::{
         duration, end_time, game_id as gp_gid, game_participations, start_time,
@@ -31,7 +29,6 @@ pub fn get_all_participations(
     use self::schema::games::dsl::{games, id as gid, name as gname, owner_id};
     use self::schema::users::dsl::{name, users};
 
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
 
     let result = game_participations
@@ -45,7 +42,7 @@ pub fn get_all_participations(
         .inner_join(users)
         .select((gid, gname, start_time, end_time, name))
         .order_by(duration.desc())
-        .get_results::<GameParticipationDTO>(&connection)
+        .get_results::<GameParticipationDTO>(&connection.0)
         .map_err(|_| Custom(Status::NotFound, "Game was not found"))?;
 
     Ok(Json(result))
@@ -54,7 +51,7 @@ pub fn get_all_participations(
 #[get("/participations")]
 pub fn get_participations(
     mut cookies: Cookies,
-    config: State<Config>,
+    connection: DieselConnection,
 ) -> Result<Json<Vec<GameParticipationDTO>>, Custom<&'static str>> {
     use self::schema::game_participations::dsl::{
         end_time, game_participations, start_time, user_id,
@@ -62,7 +59,6 @@ pub fn get_participations(
     use self::schema::games::dsl::{games, id as game_id, name as gname};
     use self::schema::users::dsl::{name, users};
 
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
 
     let result = game_participations
@@ -72,7 +68,7 @@ pub fn get_participations(
         .select((game_id, gname, start_time, end_time, name))
         .limit(100)
         .order_by(start_time.desc())
-        .get_results::<GameParticipationDTO>(&connection)
+        .get_results::<GameParticipationDTO>(&connection.0)
         .map_err(|_| Custom(Status::InternalServerError, "Failed to read games"))?;
 
     Ok(Json(result))
@@ -82,10 +78,9 @@ pub fn get_participations(
 pub fn get_participation(
     game_id: i32,
     mut cookies: Cookies,
-    config: State<Config>,
+    connection: DieselConnection,
 ) -> Result<Json<GameParticipationDTO>, Custom<&'static str>> {
     use self::schema::games::dsl::{games, id as gid, name as game_name};
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
     let result = get_participation_inner(&current_user, game_id, &connection);
     result.map_or(
@@ -94,7 +89,7 @@ pub fn get_participation(
             let name = games
                 .filter(gid.eq(game_id))
                 .select(game_name)
-                .get_result(&connection);
+                .get_result(&connection.0);
             if name.is_err() {
                 error!("Unexpected error while getting game name {:?}", name);
                 return Err(Custom(Status::NotFound, "Game was not found"));
@@ -116,7 +111,7 @@ pub fn get_participation_inner(
 
     game_participations
         .filter(user_id.eq(user.id).and(gid.eq(game_id)))
-        .get_result(client)
+        .get_result(&client.0)
         .ok()
 }
 
@@ -125,7 +120,7 @@ pub fn insert_participation(participation: GameParticipation, client: &DieselCon
 
     insert_into(game_participations)
         .values(&participation)
-        .execute(client)
+        .execute(&client.0)
         .expect("Failed to insert participation");
 }
 
@@ -143,10 +138,10 @@ pub fn end_participation(
     let start_time = gp
         .filter(user_id.eq(user.id).and(gid.eq(game_id)))
         .select((st,))
-        .get_result::<(DateTime<Utc>,)>(client)?;
+        .get_result::<(DateTime<Utc>,)>(&client.0)?;
     let dur = (end_time - start_time.0).num_milliseconds();
     update(gp.filter(user_id.eq(user.id).and(gid.eq(game_id))))
         .set((et.eq(end_time), duration.eq(dur as i32)))
-        .execute(client)
+        .execute(&client.0)
 }
 

@@ -1,0 +1,15 @@
+[development]
+workers = 2
+keep_alive = 5
+log = "debug"
+
+[development.databases]
+hermes={url="postgres://postgres:almafa1@localhost/perplexio"}
+
+[staging]
+log = "normal"
+secret_key = "R6uu1RdIq+aWlzJUBrRgSpQsdVO1dVc5CgEzRd3VjEM="
+
+[production]
+log = "critical"
+secret_key = "F7YlEdX4bnyu1ZIwnK9j8BA6ySM0FDVugkNbSUBfcqw="

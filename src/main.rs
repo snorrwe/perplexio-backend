@@ -10,6 +10,7 @@ use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
+use perplexio::fairing::DieselConnection;
 use perplexio::handler::{self, games, participations, solutions, users};
 use perplexio::service::config::Config;
 
@@ -38,7 +39,8 @@ fn main() {
             Method::Put,
             Method::Delete,
             Method::Options,
-        ].into_iter()
+        ]
+        .into_iter()
         .map(From::from)
         .collect(),
         allowed_headers: AllowedHeaders::all(),
@@ -74,7 +76,10 @@ fn main() {
             participations::get_participations,
             participations::get_participation,
         ],
-    ).attach(cors_options)
+    )
+    .attach(cors_options)
+    .attach(DieselConnection::fairing())
     .manage(config)
     .launch();
 }
+

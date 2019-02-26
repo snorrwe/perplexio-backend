@@ -1,11 +1,10 @@
+use super::super::super::fairing::DieselConnection;
 use super::super::super::model::game::{GameDTO, GameEntity, GameId};
 use super::super::super::model::paginated::Paginated;
 use super::super::super::model::participation::GameParticipation;
 use super::super::super::model::user::User;
 use super::super::super::schema;
 use super::super::super::service::auth::logged_in_user_from_cookie;
-use super::super::super::service::config;
-use super::super::super::service::db_client::{diesel_client, DieselConnection};
 use super::super::super::service::pagination::*;
 use super::super::participations::{get_participation_inner, insert_participation};
 use super::super::solutions::get_users_solutions;
@@ -13,7 +12,6 @@ use chrono::Utc;
 use diesel::prelude::*;
 use rocket::http::{Cookies, Status};
 use rocket::response::status::Custom;
-use rocket::State;
 use rocket_contrib::json::Json;
 use serde_json::to_value;
 
@@ -23,14 +21,13 @@ use serde_json::to_value;
 pub fn get_games(
     page: Option<u32>,
     mut cookies: Cookies,
-    config: State<config::Config>,
+    client: DieselConnection,
 ) -> Result<Json<Paginated<GameId>>, Custom<&'static str>> {
     use self::schema::games::dsl::{
         available_from, available_to, games, id, name as gname, owner_id, published,
     };
     use self::schema::users::dsl::{name as uname, users};
 
-    let client = diesel_client(&config);
     let current_user = logged_in_user_from_cookie(&client, &mut cookies);
 
     let page = page.unwrap_or(0) as i64;
@@ -77,9 +74,8 @@ pub fn get_games(
 pub fn get_game(
     id: i32,
     mut cookies: Cookies,
-    config: State<config::Config>,
+    connection: DieselConnection,
 ) -> Result<Json<GameDTO>, Custom<&'static str>> {
-    let connection = diesel_client(&config);
     let current_user = logged_in_user!(connection, cookies);
     let game = get_game_by_user(&connection, id, &current_user);
     if let Some(game) = game {
@@ -99,7 +95,7 @@ pub fn get_game_by_user(
     use self::schema::users::dsl::{id as uid, name as uname, users};
     games
         .filter(gid.eq(game_id))
-        .get_result::<GameEntity>(connection)
+        .get_result::<GameEntity>(&connection.0)
         .ok()
         .map(|mut game| {
             let is_owner = game.owner_id == current_user.id;
@@ -121,7 +117,7 @@ pub fn get_game_by_user(
             let owner = users
                 .filter(uid.eq(game.owner_id))
                 .select(uname)
-                .get_result(connection)
+                .get_result(&connection.0)
                 .expect("Owning user was not found");
             let game = game.into_dto(owner, is_owner);
             Some(game)
