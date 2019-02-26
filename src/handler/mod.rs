@@ -17,11 +17,10 @@ pub fn index() -> &'static str {
 /// use rocket::response::status::Custom;
 /// use perplexio::service::config::Config;
 /// use perplexio::service::auth::logged_in_user_from_cookie;
-/// use perplexio::service::db_client::diesel_client;
+/// use perplexio::fairing::DieselConnection;
 ///
-/// fn my_controller(mut cookies: Cookies, config: Config) -> Result<(), Custom<&'static str>> {
-///     let client = diesel_client(&config);
-///     let current_user = logged_in_user!(client, cookies);
+/// fn my_controller(mut cookies: Cookies, connection: DieselConnection) -> Result<(), Custom<&'static str>> {
+///     let current_user = logged_in_user!(connection, cookies);
 ///     Ok(())
 /// }
 /// ```

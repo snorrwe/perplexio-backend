@@ -12,7 +12,7 @@
 ///     // Misc imports for the example
 ///     use perplexio::model::game::GameEntity;
 ///     use perplexio::model::user::User;
-///     use perplexio::service::db_client::DieselConnection;
+///     use perplexio::fairing::DieselConnection;
 ///     use diesel::result::Error as DieselError;
 ///     use diesel::ExpressionMethods;
 ///     use diesel::prelude::*;
@@ -21,7 +21,7 @@
 ///         use self::schema::games::dsl::{games};
 ///         games
 ///             .filter(unpublished_game!(game_id, current_user))
-///             .get_result(&connection)
+///             .get_result(&connection.0)
 ///     }
 /// }
 ///
