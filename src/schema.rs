@@ -14,11 +14,20 @@ table! {
         id -> Int4,
         name -> Varchar,
         owner_id -> Int4,
-        puzzle -> Json,
-        words -> Array<Text>,
         available_from -> Nullable<Timestamptz>,
         available_to -> Nullable<Timestamptz>,
         published -> Bool,
+    }
+}
+
+table! {
+    puzzles (game_id) {
+        game_id -> Int4,
+        game_table -> Varchar,
+        table_columns -> Int4,
+        table_rows -> Int4,
+        solutions -> Array<Int4>,
+        words -> Array<Text>,
     }
 }
 
@@ -46,12 +55,14 @@ table! {
 joinable!(game_participations -> games (game_id));
 joinable!(game_participations -> users (user_id));
 joinable!(games -> users (owner_id));
+joinable!(puzzles -> games (game_id));
 joinable!(solutions -> games (game_id));
 joinable!(solutions -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(
     game_participations,
     games,
+    puzzles,
     solutions,
     users,
 );

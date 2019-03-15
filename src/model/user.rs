@@ -1,5 +1,4 @@
-#[derive(Serialize, Clone, Debug, Queryable)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, Queryable)]
 pub struct User {
     pub id: i32,
     pub name: String,

@@ -1,8 +1,8 @@
 #[derive(Serialize)]
 pub struct Paginated<T> {
-    items: Vec<T>,
-    total_pages: i64,
-    page: i64,
+    pub items: Vec<T>,
+    pub total_pages: i64,
+    pub page: i64,
 }
 
 impl<T> Paginated<T> {

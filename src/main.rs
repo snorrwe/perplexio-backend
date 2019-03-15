@@ -11,7 +11,8 @@ use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
 use perplexio::fairing::DieselConnection;
-use perplexio::handler::{self, games, participations, solutions, users};
+use perplexio::graphql;
+use perplexio::handler;
 use perplexio::service::config::Config;
 
 use dotenv::dotenv;
@@ -60,26 +61,20 @@ fn main() {
     app.mount(
         "/",
         routes![
-            handler::index,
-            games::get_games,
-            games::get_game,
-            games::post_game,
-            games::update_game,
-            games::regenerate_board,
-            games::publish_game,
-            users::login,
-            users::user_info,
-            users::register,
-            solutions::get_solution_by_game_id,
-            solutions::submit_solutions,
-            participations::get_all_participations,
-            participations::get_participations,
-            participations::get_participation,
+            handler::graphiql,
+            handler::graphql_handler,
+            handler::users::login,
+            handler::users::register,
+            handler::users::user_info,
         ],
     )
     .attach(cors_options)
     .attach(DieselConnection::fairing())
     .manage(config)
+    .manage(graphql::Schema::new(
+        graphql::Query {},
+        graphql::Mutation {},
+    ))
     .launch();
 }
 

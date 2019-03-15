@@ -22,11 +22,18 @@ extern crate regex;
 extern crate reqwest;
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate juniper;
+extern crate juniper_rocket;
 
+pub mod entity;
 pub mod fairing;
+pub mod graphql;
 pub mod guard;
 pub mod handler;
 pub mod model;
 pub mod schema;
 pub mod service;
+
+use self::fairing::DieselConnection;
 
