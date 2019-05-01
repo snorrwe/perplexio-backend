@@ -38,5 +38,36 @@ graphql_object!(Query: Context |&self| {
         let user = user.as_ref().ok_or_else(||"You have to log in first")?;
         puzzles::fetch_puzzle_by_game_id(connection, &user, game_id)
     }
+
+    /// Get the participations for the given game
+    /// Requires user to be the owner
+    field all_participations_by_game(
+        &executor,
+        game_id: i32,
+    ) -> FieldResult<Vec<participations::GameParticipationDTO>> {
+        let context = executor.context();
+        let (connection, user) = (&context.connection, &context.user);
+        let user = user.as_ref().ok_or_else(||"You have to log in first")?;
+        participations::get_all_participations(connection, user, game_id)
+    }
+
+    /// Get the participations of the current user
+    field participations(&executor) -> FieldResult<Vec<participations::GameParticipationDTO>> {
+        let context = executor.context();
+        let (connection, user) = (&context.connection, &context.user);
+        let user = user.as_ref().ok_or_else(||"You have to log in first")?;
+        participations::get_participations(connection, user)
+    }
+
+    /// Get the user's participation belonging to the game
+    field participation(
+        &executor,
+        game_id: i32,
+    ) -> FieldResult<participations::GameParticipationDTO> {
+        let context = executor.context();
+        let (connection, user) = (&context.connection, &context.user);
+        let user = user.as_ref().ok_or_else(||"You have to log in first")?;
+        participations::get_participation(connection, user, game_id)
+    }
 });
 

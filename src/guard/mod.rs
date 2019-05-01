@@ -9,16 +9,6 @@ use std::ops::Deref;
 
 /// Rocket Request Guard object to retreive the User before the handler code
 ///
-/// ### Example
-///
-/// ```rust
-/// #[get("/")]
-/// fn my_protected_route(user: LoggedInUser) {
-///     // Retreiveing the underlying User object
-///     let user = user.into_inner();
-///     // Your code here
-/// }
-/// ```
 #[derive(Debug)]
 pub struct LoggedInUser(pub User);
 

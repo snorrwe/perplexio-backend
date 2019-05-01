@@ -1,7 +1,7 @@
-use super::super::entity::puzzle_entities::PuzzleEntity;
-use super::super::model::puzzle::Puzzle;
-use super::super::model::user::User;
-use super::super::schema;
+use crate::entity::puzzle_entities::PuzzleEntity;
+use crate::model::puzzle::Puzzle;
+use crate::model::user::User;
+use crate::schema;
 use super::*;
 use diesel::prelude::*;
 use juniper::{self, FieldResult};

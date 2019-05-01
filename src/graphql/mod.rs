@@ -2,6 +2,7 @@ pub mod mutation;
 pub mod games;
 pub mod query;
 pub mod puzzles;
+pub mod participations;
 
 use super::model::user::User;
 use super::fairing::DieselConnection;
