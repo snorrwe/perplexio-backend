@@ -4,10 +4,10 @@ use crate::model::participation::{GameParticipation, GameParticipationEntity};
 use crate::model::user::User;
 use crate::schema;
 use chrono::{DateTime, Utc};
+use diesel::insert_into;
 use diesel::prelude::*;
 use diesel::ExpressionMethods;
 use diesel::RunQueryDsl;
-use diesel::{insert_into, update};
 use juniper::FieldResult;
 
 #[derive(GraphQLObject)]
@@ -136,32 +136,6 @@ pub fn add_participation(
     insert_into(dsl::game_participations)
         .values(&participation)
         .execute(&connection.0)?;
-
-    Ok(true)
-}
-
-pub fn end_participation(
-    client: &DieselConnection,
-    user: &User,
-    game_id: i32,
-) -> FieldResult<bool> {
-    use super::super::schema::game_participations::dsl::{
-        duration, end_time as et, game_id as gid, game_participations as gp, start_time as st,
-        user_id,
-    };
-
-    let end_time = Utc::now();
-    let start_time = gp
-        .filter(user_id.eq(user.id).and(gid.eq(game_id)))
-        .select((st,))
-        .get_result::<(DateTime<Utc>,)>(&client.0)
-        .optional()?
-        .ok_or("User is not participating")?;
-
-    let dur = (end_time - start_time.0).num_milliseconds();
-    update(gp.filter(user_id.eq(user.id).and(gid.eq(game_id))))
-        .set((et.eq(end_time), duration.eq(dur as i32)))
-        .execute(&client.0)?;
 
     Ok(true)
 }
