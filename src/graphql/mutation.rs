@@ -5,7 +5,7 @@ use juniper::{self, FieldResult};
 pub struct Mutation;
 
 graphql_object!(Mutation: Context | &self | {
-    field game(
+    field add_game(
         &executor,
         submission: games::GameSubmissionDTO
     ) -> FieldResult<games::GameDTO> {
@@ -15,8 +15,8 @@ graphql_object!(Mutation: Context | &self | {
         games::add_game(connection, &user, submission)
     }
 
-    /// Add participation to the given game
-    field add_participation(
+    /// Start the user's participation in the given game
+    field start_participation(
         &executor,
         game_id: i32,
     ) -> FieldResult<bool> {
