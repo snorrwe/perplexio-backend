@@ -1,6 +1,6 @@
 use std::ops;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash, GraphQLInputObject)]
 #[serde(rename_all = "camelCase")]
 pub struct Vector {
     pub x: i32,
@@ -13,14 +13,8 @@ impl Vector {
     }
 
     pub fn normal(&self) -> Vector {
-        let mut x = 1;
-        if self.x != 0 {
-            x = self.x.abs();
-        }
-        let mut y = 1;
-        if self.y != 0 {
-            y = self.y.abs();
-        }
+        let x = if self.x != 0 { self.x.abs() } else { 1 };
+        let y = if self.y != 0 { self.y.abs() } else { 1 };
         Vector {
             x: self.x / x,
             y: self.y / y,

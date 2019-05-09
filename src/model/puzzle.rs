@@ -1,3 +1,4 @@
+use super::super::entity::puzzle_entities::PuzzleEntity;
 use super::vector::{segments_intersecting, Vector};
 use rand::prelude::*;
 use serde_json::Value as JsonValue;
@@ -12,6 +13,30 @@ pub struct Puzzle {
     rows: usize,
     solutions: HashSet<(Vector, Vector)>,
     words: Vec<String>,
+}
+
+impl From<PuzzleEntity> for Puzzle {
+    fn from(puzzle: PuzzleEntity) -> Self {
+        let solutions = puzzle
+            .solutions
+            .iter()
+            .enumerate()
+            .step_by(4)
+            .map(|(i, x1)| {
+                let y1 = puzzle.solutions[i + 1];
+                let x2 = puzzle.solutions[i + 2];
+                let y2 = puzzle.solutions[i + 3];
+                (Vector::new(*x1, y1), Vector::new(x2, y2))
+            })
+            .collect();
+        Puzzle {
+            table: puzzle.game_table.chars().collect(),
+            columns: puzzle.table_columns as usize,
+            rows: puzzle.table_rows as usize,
+            words: puzzle.words,
+            solutions: solutions,
+        }
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -134,6 +159,7 @@ impl Puzzle {
         col + self.columns * row
     }
 
+    /// Generate a new puzzle from the given words
     pub fn from_words(words: Vec<String>, max_iterations: usize) -> Result<Puzzle, PuzzleError> {
         let mut result = Err(PuzzleError::InvalidArgument);
         'a: for i in 0..max_iterations {
@@ -332,7 +358,8 @@ mod test {
             "cerial",
             "great",
             "frootloops",
-        ].iter()
+        ]
+        .iter()
         .map(|w| w.to_string())
         .collect();
         let puzzle = Puzzle::from_words(words, 1000).expect("Failed to generate");
@@ -344,7 +371,8 @@ mod test {
         let table = "
             123
             456
-            ".chars()
+            "
+        .chars()
         .filter(|c| b'0' <= *c as u8 && *c as u8 <= b'9')
         .collect();
 
