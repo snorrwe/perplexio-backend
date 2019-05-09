@@ -87,4 +87,3 @@ pub fn get_user_from_google(token: &str) -> Value {
 
     serde_json::from_str(&body).expect("Failed to deserialize response")
 }
-

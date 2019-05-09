@@ -72,4 +72,3 @@ pub fn end_participation(
 
     Ok(true)
 }
-

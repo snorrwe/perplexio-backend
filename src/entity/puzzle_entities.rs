@@ -30,4 +30,3 @@ pub struct PuzzleUpdate {
     pub solutions: Vec<i32>,
     pub words: Option<Vec<String>>,
 }
-

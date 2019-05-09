@@ -24,4 +24,3 @@ pub fn graphql_handler(
     };
     request.execute(&schema, &context)
 }
-

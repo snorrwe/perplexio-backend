@@ -1,7 +1,8 @@
 use super::*;
+use crate::model::solution::SolutionDTO;
 use games;
-use puzzles;
 use juniper::{self, FieldResult};
+use puzzles;
 
 pub struct Query;
 
@@ -69,5 +70,11 @@ graphql_object!(Query: Context |&self| {
         let user = user.as_ref().ok_or_else(||"You have to log in first")?;
         participations::get_participation(connection, user, game_id)
     }
-});
 
+    field get_solution_by_game_id(&executor, game_id: i32) -> FieldResult<Vec<SolutionDTO>> {
+        let context = executor.context();
+        let (connection, user) = (&context.connection, &context.user);
+        let user = user.as_ref().ok_or_else(||"You have to log in first")?;
+        solutions::get_solution_by_game_id(connection, user, game_id)
+    }
+});

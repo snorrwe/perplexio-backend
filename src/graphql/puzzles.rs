@@ -1,8 +1,8 @@
+use super::*;
 use crate::entity::puzzle_entities::PuzzleEntity;
 use crate::model::puzzle::Puzzle;
 use crate::model::user::User;
 use crate::schema;
-use super::*;
 use diesel::prelude::*;
 use juniper::{self, FieldResult};
 
@@ -38,4 +38,3 @@ pub fn fetch_puzzle_by_game_id(
 
     Ok(result)
 }
-

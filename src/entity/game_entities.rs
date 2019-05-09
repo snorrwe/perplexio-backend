@@ -23,4 +23,3 @@ pub struct GameInsert {
     pub available_to: Date,
     pub published: bool,
 }
-

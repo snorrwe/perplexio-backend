@@ -1,7 +1,29 @@
 use super::super::schema::solutions;
 pub use super::vector::Vector;
 
-pub type SolutionDTO = (Vector, Vector);
+#[derive(Debug, Clone, GraphQLObject, Eq, PartialEq)]
+pub struct SolutionDTO {
+    pub solution1: Vector,
+    pub solution2: Vector,
+}
+
+impl SolutionDTO {
+    pub fn new(s1: Vector, s2: Vector) -> Self {
+        Self {
+            solution1: s1,
+            solution2: s2,
+        }
+    }
+}
+
+impl From<(Vector, Vector)> for SolutionDTO {
+    fn from(p: (Vector, Vector)) -> Self {
+        Self {
+            solution1: p.0,
+            solution2: p.1,
+        }
+    }
+}
 
 #[derive(Insertable)]
 #[table_name = "solutions"]

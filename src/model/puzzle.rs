@@ -409,4 +409,3 @@ mod test {
         assert!(shape.0 * shape.1 >= 4);
     }
 }
-

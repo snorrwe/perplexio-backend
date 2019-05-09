@@ -140,6 +140,14 @@ pub fn add_participation(
     Ok(true)
 }
 
+pub fn end_participation(
+    _connection: &DieselConnection,
+    _current_user: &User,
+    _game_id: i32,
+) -> FieldResult<bool> {
+    unimplemented!()
+}
+
 fn is_participating(connection: &DieselConnection, user: &User, game_id: i32) -> FieldResult<bool> {
     use super::super::schema::game_participations::dsl;
 
@@ -153,4 +161,3 @@ fn is_participating(connection: &DieselConnection, user: &User, game_id: i32) ->
 
     Ok(result)
 }
-
