@@ -1,7 +1,6 @@
 use std::ops;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Hash, GraphQLInputObject)]
-#[serde(rename_all = "camelCase")]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, Serialize, Deserialize, GraphQLObject)]
 pub struct Vector {
     pub x: i32,
     pub y: i32,
@@ -145,3 +144,4 @@ mod test {
         assert!(segments_intersecting(start_a, end_a, start_b, end_b));
     }
 }
+
