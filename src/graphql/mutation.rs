@@ -1,7 +1,6 @@
 use super::*;
 use crate::model::solution::SolutionDTO;
 use crate::model::vector::Vector;
-use games;
 use juniper::{self, FieldResult};
 
 pub struct Mutation;

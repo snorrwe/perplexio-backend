@@ -1,8 +1,6 @@
 use super::*;
 use crate::model::solution::SolutionDTO;
-use games;
 use juniper::{self, FieldResult};
-use puzzles;
 
 pub struct Query;
 
