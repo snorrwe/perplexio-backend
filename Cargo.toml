@@ -20,6 +20,7 @@ log = "0.4"
 chrono = { version = "0.4", features=["serde"] }
 juniper = "0.11"
 juniper_rocket  ="0.2"
+simple_logger = "1.0.1"
 
 [dependencies.diesel]
 version = "1.4.1"

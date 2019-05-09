@@ -25,6 +25,7 @@ extern crate diesel;
 #[macro_use]
 extern crate juniper;
 extern crate juniper_rocket;
+extern crate simple_logger;
 
 pub mod entity;
 pub mod fairing;
@@ -35,7 +36,6 @@ pub mod model;
 pub mod schema;
 pub mod service;
 
-use rocket::config::{Config as RocketConfig, Environment};
 use rocket::http::Method;
 use rocket_cors::{AllowedHeaders, AllowedOrigins};
 
@@ -46,6 +46,8 @@ use dotenv::dotenv;
 
 fn main() {
     dotenv().ok();
+    simple_logger::init_with_level(log::Level::Debug).expect("Failed to init logging");
+
     let config = Config::get();
 
     let allowed_origins: Vec<&str> = config
@@ -75,16 +77,7 @@ fn main() {
         allow_credentials: true,
         ..Default::default()
     };
-    let app = if config.heroku {
-        let rocket_config = RocketConfig::build(Environment::Production)
-            .address(config.address.clone())
-            .port(config.port)
-            .finalize()
-            .expect("Failed to init custom rocket options");
-        rocket::custom(rocket_config)
-    } else {
-        rocket::ignite()
-    };
+    let app = rocket::ignite();
     app.mount(
         "/",
         routes![
@@ -104,3 +97,4 @@ fn main() {
     ))
     .launch();
 }
+
