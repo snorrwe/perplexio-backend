@@ -1,5 +1,5 @@
 use super::super::entity::{
-    game_entities::{GameEntity, GameInsert},
+    game_entities::{GameEntity, GameInsert, GameUpdate},
     puzzle_entities::PuzzleInsert,
 };
 use super::super::model::{paginated::Paginated, puzzle, user::User, Date};
@@ -7,7 +7,7 @@ use super::super::schema;
 use super::super::service::pagination::*;
 use super::*;
 use chrono::{DateTime, Utc};
-use diesel::dsl::insert_into;
+use diesel::dsl::{insert_into, update};
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use juniper::{self, FieldResult};
@@ -43,6 +43,14 @@ graphql_object!(PaginatedGames: () |&self| {
 pub struct GameSubmissionDTO {
     pub name: String,
     pub words: Vec<String>,
+    pub available_from: Option<DateTime<Utc>>,
+    pub available_to: Option<DateTime<Utc>>,
+}
+
+#[derive(GraphQLInputObject, Debug)]
+pub struct GameUpdateDTO {
+    pub game_id: i32,
+    pub name: Option<String>,
     pub available_from: Option<DateTime<Utc>>,
     pub available_to: Option<DateTime<Utc>>,
 }
@@ -153,7 +161,14 @@ pub fn add_game(
     use self::schema::games::dsl::games;
     use self::schema::puzzles::dsl::puzzles;
 
-    // TODO: check if exists
+    game_submission.words.iter().try_for_each(|words| {
+        if words.len() < 3 {
+            Err("Words must be at least 3 characters long")
+        } else {
+            Ok(())
+        }
+    })?;
+
     let result = connection.transaction::<_, DieselError, _>(|| {
         let result = insert_into(games)
             .values(GameInsert {
@@ -201,3 +216,56 @@ pub fn add_game(
 
     Ok(result)
 }
+
+pub fn publish_game(
+    connection: &DieselConnection,
+    current_user: &User,
+    game_id: i32,
+) -> FieldResult<bool> {
+    use self::schema::games::dsl;
+
+    update(dsl::games.filter(dsl::owner_id.eq(current_user.id).and(dsl::id.eq(game_id))))
+        .set(dsl::published.eq(true))
+        .execute(&connection.0)?;
+
+    Ok(true)
+}
+
+pub fn update_game(
+    connection: &DieselConnection,
+    current_user: &User,
+    changeset: GameUpdateDTO,
+) -> FieldResult<GameDTO> {
+    use crate::schema::games as g;
+
+    let game_id = changeset.game_id;
+    let changeset = GameUpdate {
+        name: changeset.name,
+        available_to: changeset.available_to,
+        available_from: changeset.available_from,
+    };
+
+    let game = update(
+        g::table.filter(
+            g::dsl::id
+                .eq(game_id)
+                .and(g::dsl::owner_id.eq(current_user.id))
+                .and(g::dsl::published.eq(false)),
+        ),
+    )
+    .set(changeset)
+    .get_result::<GameEntity>(&connection.0)?;
+
+    let result = GameDTO {
+        id: game.id,
+        name: game.name,
+        owner: current_user.name.clone(),
+        available_from: game.available_from,
+        available_to: game.available_to,
+        published: game.published,
+        is_owner: true,
+    };
+
+    Ok(result)
+}
+

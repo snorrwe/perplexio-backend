@@ -1,9 +1,11 @@
 use super::*;
-use crate::entity::puzzle_entities::PuzzleEntity;
+use crate::entity::puzzle_entities::{PuzzleEntity, PuzzleUpdate};
 use crate::model::puzzle::Puzzle;
 use crate::model::user::User;
 use crate::schema;
+use diesel::dsl::update;
 use diesel::prelude::*;
+use diesel::result::Error as DieselError;
 use juniper::{self, FieldResult};
 
 #[derive(GraphQLObject, Debug)]
@@ -45,6 +47,49 @@ pub fn fetch_puzzle_by_game_id(
                 rows: rows as i32,
             }
         })?;
+
+    Ok(result)
+}
+
+pub fn regenerate_puzzle(
+    connection: &DieselConnection,
+    current_user: &User,
+    game_id: i32,
+) -> FieldResult<PuzzleDTO> {
+    use self::schema::games as g;
+    use self::schema::puzzles as p;
+
+    let result = connection.transaction::<_, DieselError, _>(|| {
+        let puzzle = p::table
+            .filter(p::dsl::game_id.eq(game_id))
+            .inner_join(g::table)
+            .filter(g::dsl::owner_id.eq(current_user.id))
+            .select(p::table::all_columns())
+            .get_result::<PuzzleEntity>(&connection.0)?;
+
+        let puzzle = Puzzle::from_words(puzzle.words, 200).map_err(|e| {
+            error!("Failed to generate puzzle {:?}", e);
+            DieselError::RollbackTransaction
+        })?;
+
+        let puzzle = PuzzleUpdate::from(puzzle);
+
+        update(p::table)
+            .filter(p::dsl::game_id.eq(game_id))
+            .set(puzzle)
+            .get_result::<PuzzleEntity>(&connection.0)
+    })?;
+
+    let result = Puzzle::from(result);
+
+    let (columns, rows) = result.get_shape();
+
+    let result = PuzzleDTO {
+        game_id: game_id,
+        game_table: result.render_table(),
+        columns: columns as i32,
+        rows: rows as i32,
+    };
 
     Ok(result)
 }

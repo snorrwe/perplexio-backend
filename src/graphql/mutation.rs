@@ -41,5 +41,26 @@ graphql_object!(Mutation: Context | &self | {
         let solution = SolutionDTO::new(Vector::new(solution[0], solution[1]), Vector::new(solution[2], solution[3]));
         solutions::submit_solution(connection, user, game_id, solution)
     }
+
+    field publish_game(&executor, game_id: i32) -> FieldResult<bool> {
+        let context = executor.context();
+        let (connection, user) = (&context.connection, &context.user);
+        let user = user.as_ref().ok_or("You need to log in first")?;
+        games::publish_game(connection, user, game_id)
+    }
+
+    field regenerate_puzzle(&executor, game_id: i32) -> FieldResult<puzzles::PuzzleDTO> {
+        let context = executor.context();
+        let (connection, user) = (&context.connection, &context.user);
+        let user = user.as_ref().ok_or("You need to log in first")?;
+        puzzles::regenerate_puzzle(connection, user, game_id)
+    }
+
+    field update_game(&executor, payload: games::GameUpdateDTO) -> FieldResult<games::GameDTO> {
+        let context = executor.context();
+        let (connection, user) = (&context.connection, &context.user);
+        let user = user.as_ref().ok_or("You need to log in first")?;
+        games::update_game(connection, user, payload)
+    }
 });
 

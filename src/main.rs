@@ -4,6 +4,7 @@
 extern crate postgres;
 #[macro_use(database)]
 extern crate rocket_contrib;
+extern crate arrayvec;
 extern crate rocket_cors;
 extern crate serde;
 #[macro_use]
