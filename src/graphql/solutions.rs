@@ -81,18 +81,23 @@ pub fn submit_solution(
 }
 
 fn get_current_puzzle_solutions(client: &DieselConnection, gid: i32) -> Option<Vec<SolutionDTO>> {
-    use crate::schema::solutions::dsl;
+    use crate::schema::puzzles::dsl;
 
-    dsl::solutions
+    dsl::puzzles
         .filter(dsl::game_id.eq(gid))
-        .select((dsl::x1, dsl::x2, dsl::y1, dsl::y2))
-        .get_results::<(i32, i32, i32, i32)>(&client.0)
+        .select(dsl::solutions)
+        .get_result(&client.0)
         .optional()
         .expect("Failed to read solutions")
-        .map(|v| {
-            v.into_iter()
-                .map(|(x1, x2, y1, y2)| (Vector::new(x1, y1), Vector::new(x2, y2)))
+        .map(|v: Vec<i32>| {
+            v.as_slice()
+                .windows(4)
+                .map(|s| {
+                    debug_assert!(s.len() == 4);
+                    (Vector::new(s[0], s[1]), Vector::new(s[2], s[3]))
+                })
                 .map(SolutionDTO::from)
                 .collect()
         })
 }
+
