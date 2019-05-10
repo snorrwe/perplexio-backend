@@ -16,14 +16,24 @@ pub struct PuzzleDTO {
 
 pub fn fetch_puzzle_by_game_id(
     connection: &DieselConnection,
-    _current_user: &User,
+    current_user: &User,
     game_id: i32,
 ) -> FieldResult<PuzzleDTO> {
+    use self::schema::game_participations as gp;
+    use self::schema::games as g;
     use self::schema::puzzles::dsl;
 
-    // TODO: check if user has permission
     let result = dsl::puzzles
+        .inner_join(g::table)
+        .left_outer_join(gp::table.on(gp::dsl::game_id.eq(dsl::game_id)))
         .filter(dsl::game_id.eq(game_id))
+        .filter(
+            // check if the user has permissions
+            gp::user_id
+                .eq(current_user.id)
+                .or(g::dsl::owner_id.eq(current_user.id)),
+        )
+        .select(dsl::puzzles::all_columns())
         .get_result::<PuzzleEntity>(&connection.0)
         .map(|entity| Puzzle::from(entity))
         .map(|puzzle| {
@@ -38,3 +48,4 @@ pub fn fetch_puzzle_by_game_id(
 
     Ok(result)
 }
+

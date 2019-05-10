@@ -82,5 +82,13 @@ graphql_object!(Query: Context |&self| {
         let user = user.as_ref().ok_or_else(||"You have to log in first")?;
         solutions::get_solution_by_game_id(connection, user, game_id)
     }
+
+    /// Return all solutions of the game. Only if the current user is the owner of the game
+    field get_all_solutions(&executor, game_id: i32) -> FieldResult<Vec<SolutionDTO>> {
+        let context = executor.context();
+        let (connection, user) = (&context.connection, &context.user);
+        let user = user.as_ref().ok_or_else(||"You have to log in first")?;
+        solutions::get_all_solutions(connection, user, game_id)
+    }
 });
 

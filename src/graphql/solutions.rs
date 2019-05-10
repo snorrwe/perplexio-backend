@@ -40,6 +40,27 @@ pub fn get_users_solutions(
         .collect()
 }
 
+/// Return all solutions of the game. Only if the current user is the owner of the game
+pub fn get_all_solutions(
+    client: &DieselConnection,
+    current_user: &User,
+    game_id: i32,
+) -> FieldResult<Vec<SolutionDTO>> {
+    use crate::schema::games::dsl;
+
+    if dsl::games
+        .filter(dsl::id.eq(game_id).and(dsl::owner_id.eq(current_user.id)))
+        .count()
+        .get_result::<i64>(&client.0)?
+        == 0
+    {
+        Err("Game not found")?;
+    }
+    let result = get_current_puzzle_solutions(client, game_id)
+        .ok_or("Unexpected error retrieving the game")?;
+    Ok(result)
+}
+
 pub fn submit_solution(
     client: &DieselConnection,
     current_user: &User,
