@@ -85,7 +85,6 @@ fn main() {
             handler::graphql_handler,
             handler::users::login,
             handler::users::register,
-            handler::users::user_info,
         ],
     )
     .attach(cors_options)

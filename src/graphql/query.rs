@@ -13,7 +13,7 @@ graphql_object!(Query: Context |&self| {
 
     field user_info(&executor) -> FieldResult<Option<UserInfo>> {
         let context = executor.context();
-        let user = context.user.map(UserInfo::from);
+        let user = context.user.as_ref().map(UserInfo::from);
         Ok(user)
     }
 

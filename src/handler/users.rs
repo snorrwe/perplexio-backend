@@ -1,5 +1,4 @@
 use super::super::fairing::DieselConnection;
-use super::super::model::user::UserInfo;
 use super::super::service::auth;
 use super::super::service::config::Config;
 use super::super::service::db_client::db_client;
@@ -8,7 +7,6 @@ use rocket::http::uri::Absolute;
 use rocket::http::{Cookie, Cookies};
 use rocket::response::Redirect;
 use rocket::State;
-use rocket_contrib::json::Json;
 
 #[get("/login?<code>")]
 pub fn login(
@@ -56,10 +54,10 @@ fn get_login_redirect_by_cookie(
 
 fn get_login_redirect(config: &Config) -> Redirect {
     if let Some(url) = &config.on_login_redirect {
-        let url: Absolute = Absolute::parse(url).unwrap();
+        let url = Absolute::parse(url).unwrap();
         Redirect::to(url.into_owned())
     } else {
-        let uri = uri!(user_info);
+        let uri = uri!(crate::handler::graphiql);
         Redirect::to(uri)
     }
 }

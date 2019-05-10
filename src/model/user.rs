@@ -18,3 +18,11 @@ impl From<User> for UserInfo {
         }
     }
 }
+
+impl From<&User> for UserInfo {
+    fn from(u: &User)->Self{
+        Self{
+            name: u.name.clone()
+        }
+    }
+}
