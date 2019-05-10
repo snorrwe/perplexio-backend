@@ -1,5 +1,6 @@
 use super::*;
 use crate::model::solution::SolutionDTO;
+use crate::model::user::UserInfo;
 use juniper::{self, FieldResult};
 
 pub struct Query;
@@ -8,6 +9,12 @@ graphql_object!(Query: Context |&self| {
     /// "version of the api"
     field apiVersion() -> &str {
         "0.1.0"
+    }
+
+    field user_info(&executor) -> FieldResult<Option<UserInfo>> {
+        let context = executor.context();
+        let user = context.user.map(UserInfo::from);
+        Ok(user)
     }
 
     field games(
@@ -76,3 +83,4 @@ graphql_object!(Query: Context |&self| {
         solutions::get_solution_by_game_id(connection, user, game_id)
     }
 });
+

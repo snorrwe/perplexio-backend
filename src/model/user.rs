@@ -6,8 +6,15 @@ pub struct User {
     pub auth_token: Option<String>,
 }
 
-#[derive(Serialize, Clone, Debug)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, GraphQLObject)]
 pub struct UserInfo {
     pub name: String,
+}
+
+impl From<User> for UserInfo {
+    fn from(u: User)->Self{
+        Self{
+            name: u.name
+        }
+    }
 }

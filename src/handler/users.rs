@@ -85,14 +85,6 @@ pub fn register(token: String, mut cookies: Cookies, config: State<Config>) -> R
     get_login_redirect(&config)
 }
 
-#[get("/userinfo")]
-pub fn user_info(mut cookies: Cookies, connection: DieselConnection) -> Option<Json<UserInfo>> {
-    match auth::logged_in_user_from_cookie(&connection, &mut cookies) {
-        Some(user) => Some(Json(UserInfo { name: user.name })),
-        None => None,
-    }
-}
-
 fn add_auth_cookies(token: &String, cookies: &mut Cookies) {
     let auth_cookie = Cookie::build("Authorization", format!("Bearer {}", token))
         .path("/")
