@@ -1,9 +1,6 @@
 use super::model::user::User;
 use super::service::auth::logged_in_user_from_cookie;
 use super::DieselConnection;
-use rocket::http::Status;
-use rocket::request::{self, FromRequest, Request};
-use rocket::Outcome;
 use std::ops::Deref;
 
 /// Rocket Request Guard object to retreive the User before the handler code
@@ -31,21 +28,21 @@ impl Into<User> for LoggedInUser {
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for LoggedInUser {
-    type Error = LoggedInUserError;
-
-    fn from_request(req: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let mut cookies = req.cookies();
-        let connection: DieselConnection = req.guard().map_failure(|e| {
-            error!("Error retreiving db connection {:?}", e);
-            (Status::InternalServerError, LoggedInUserError::DbError)
-        })?;
-
-        let user = logged_in_user_from_cookie(&connection, &mut cookies);
-
-        match user {
-            Some(user) => Outcome::Success(Self(user)),
-            None => Outcome::Failure((Status::Unauthorized, LoggedInUserError::NotFound)),
-        }
-    }
-}
+// impl<'a, 'r> FromRequest<'a, 'r> for LoggedInUser {
+//     type Error = LoggedInUserError;
+//
+//     fn from_request(req: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+//         let mut cookies = req.cookies();
+//         let connection: DieselConnection = req.guard().map_failure(|e| {
+//             error!("Error retreiving db connection {:?}", e);
+//             (Status::InternalServerError, LoggedInUserError::DbError)
+//         })?;
+//
+//         let user = logged_in_user_from_cookie(&connection, &mut cookies);
+//
+//         match user {
+//             Some(user) => Outcome::Success(Self(user)),
+//             None => Outcome::Failure((Status::Unauthorized, LoggedInUserError::NotFound)),
+//         }
+//     }
+// }
