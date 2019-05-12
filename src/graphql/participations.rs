@@ -121,7 +121,7 @@ pub fn add_participation(
     current_user: &User,
     game_id: i32,
 ) -> FieldResult<bool> {
-    use super::super::schema::game_participations::dsl;
+    use crate::schema::game_participations::dsl;
 
     if is_participating(connection, current_user, game_id)? {
         Err("User is already participating in the game")?;
@@ -142,11 +142,22 @@ pub fn add_participation(
 }
 
 pub fn end_participation(
-    _connection: &DieselConnection,
-    _current_user: &User,
-    _game_id: i32,
+    connection: &DieselConnection,
+    current_user: &User,
+    game_id: i32,
 ) -> FieldResult<bool> {
-    unimplemented!()
+    use crate::schema::game_participations::dsl;
+    use diesel::update;
+
+    if !is_participating(connection, current_user, game_id)? {
+        Err("User is not participating in the game")?;
+    }
+
+    update(dsl::game_participations)
+        .set(dsl::end_time.eq(Utc::now()))
+        .execute(connection)?;
+
+    Ok(true)
 }
 
 fn is_participating(connection: &DieselConnection, user: &User, game_id: i32) -> FieldResult<bool> {

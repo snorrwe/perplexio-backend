@@ -1,8 +1,8 @@
 use super::participations::end_participation;
-use crate::DieselConnection;
 use crate::model::solution::{SolutionDTO, SolutionEntity, SolutionForm};
 use crate::model::user::User;
 use crate::model::vector::Vector;
+use crate::DieselConnection;
 use diesel::insert_into;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -90,6 +90,7 @@ pub fn submit_solution(
                 })
                 .execute(connection)?;
         }
+        debug!("???? {:#?} ", puzzle_solutions);
         if current_solutions.len() + 1 == puzzle_solutions.len() {
             end_participation(connection, current_user, game_id).map_err(|e| {
                 error!("Failed to end participation {:?}", e);
@@ -101,7 +102,10 @@ pub fn submit_solution(
     Ok(true)
 }
 
-fn get_current_puzzle_solutions(connection: &DieselConnection, gid: i32) -> Option<Vec<SolutionDTO>> {
+fn get_current_puzzle_solutions(
+    connection: &DieselConnection,
+    gid: i32,
+) -> Option<Vec<SolutionDTO>> {
     use crate::schema::puzzles::dsl;
 
     dsl::puzzles
@@ -112,7 +116,7 @@ fn get_current_puzzle_solutions(connection: &DieselConnection, gid: i32) -> Opti
         .expect("Failed to read solutions")
         .map(|v: Vec<i32>| {
             v.as_slice()
-                .windows(4)
+                .chunks(4)
                 .map(|s| {
                     debug_assert!(s.len() == 4);
                     (Vector::new(s[0], s[1]), Vector::new(s[2], s[3]))
@@ -121,3 +125,4 @@ fn get_current_puzzle_solutions(connection: &DieselConnection, gid: i32) -> Opti
                 .collect()
         })
 }
+
