@@ -14,6 +14,7 @@ pub struct PuzzleDTO {
     pub game_table: Vec<String>,
     pub columns: i32,
     pub rows: i32,
+    pub words: Vec<String>,
 }
 
 pub fn fetch_puzzle_by_game_id(
@@ -45,6 +46,7 @@ pub fn fetch_puzzle_by_game_id(
                 game_table: puzzle.render_table(),
                 columns: columns as i32,
                 rows: rows as i32,
+                words: puzzle.get_words().clone(),
             }
         })?;
 
@@ -99,6 +101,7 @@ pub fn regenerate_puzzle(
         game_table: result.render_table(),
         columns: columns as i32,
         rows: rows as i32,
+        words: result.get_words().clone(),
     };
 
     Ok(result)
