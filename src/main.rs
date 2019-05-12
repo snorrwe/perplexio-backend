@@ -31,6 +31,8 @@ pub mod service;
 
 use crate::graphql::{mutation::Mutation, query::Query, Schema};
 use crate::service::config::Config;
+use actix_web::http::header;
+use actix_web::middleware::cors::Cors;
 use actix_web::middleware::identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{middleware, web, App, HttpServer};
 pub use diesel::pg::PgConnection as DieselConnection;
@@ -53,10 +55,21 @@ fn main() {
         .expect("Failed to create pool.");
 
     HttpServer::new(move || {
+        let mut cors = Cors::new();
+
+        for url in config.allowed_origins.iter() {
+            cors = cors.allowed_origin(url.as_str());
+        }
+
         App::new()
             .data(config.clone())
             .data(schema.clone())
             .data(pool.clone())
+            .wrap(
+                cors.allowed_methods(vec!["GET", "POST"])
+                    .allowed_headers(vec![header::CONTENT_TYPE])
+                    .supports_credentials(),
+            )
             .wrap(middleware::Logger::default())
             .wrap(IdentityService::new(
                 CookieIdentityPolicy::new(
