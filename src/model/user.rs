@@ -12,17 +12,15 @@ pub struct UserInfo {
 }
 
 impl From<User> for UserInfo {
-    fn from(u: User)->Self{
-        Self{
-            name: u.name
-        }
+    fn from(u: User) -> Self {
+        Self { name: u.name }
     }
 }
 
 impl From<&User> for UserInfo {
-    fn from(u: &User)->Self{
-        Self{
-            name: u.name.clone()
+    fn from(u: &User) -> Self {
+        Self {
+            name: u.name.clone(),
         }
     }
 }

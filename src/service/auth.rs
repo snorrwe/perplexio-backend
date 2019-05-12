@@ -1,13 +1,13 @@
-use super::super::fairing::DieselConnection;
+use crate::DieselConnection;
 use super::super::model::user::User;
 use super::super::schema;
 use super::config;
 use super::db_client::db_client;
+use actix_web::http::Cookie;
 use diesel::prelude::*;
 use oauth2::Config;
 use regex::Regex;
 use reqwest;
-use rocket::http::Cookies;
 use serde_json::Value;
 
 pub fn client(config: &config::Config) -> Config {
@@ -29,11 +29,12 @@ pub fn client(config: &config::Config) -> Config {
 /// get the `User` using the token stored in our database
 pub fn logged_in_user_from_cookie(
     connection: &DieselConnection,
-    cookies: &mut Cookies,
+    cookies: &[Cookie<'static>],
 ) -> Option<User> {
     let re = Regex::new("^Bearer ").unwrap();
     cookies
-        .get("Authorization")
+        .iter()
+        .find(|c| c.name() == "Authorization")
         .map(|cookie| {
             let token = re.replace(cookie.value(), "").into_owned();
             logged_in_user(connection, &token)
@@ -47,7 +48,7 @@ pub fn logged_in_user(connection: &DieselConnection, token: &str) -> Option<User
 
     users
         .filter(auth_token.eq(token))
-        .get_result(&connection.0)
+        .get_result(connection)
         .ok()
 }
 

@@ -1,5 +1,5 @@
 use crate::entity::game_entities::GameEntity;
-use crate::fairing::DieselConnection;
+use crate::DieselConnection;
 use crate::model::participation::{GameParticipation, GameParticipationEntity};
 use crate::model::user::User;
 use crate::schema;
@@ -42,7 +42,7 @@ pub fn get_all_participations(
         .inner_join(games)
         .inner_join(users)
         .order_by(duration.desc())
-        .get_results::<(GameParticipationEntity, GameEntity, User)>(&connection.0)
+        .get_results::<(GameParticipationEntity, GameEntity, User)>(connection)
         .map_err(|_| "Game was not found")?;
 
     let result = result
@@ -74,7 +74,7 @@ pub fn get_participations(
         .inner_join(users)
         .limit(100)
         .order_by(start_time.desc())
-        .get_results::<(GameParticipationEntity, GameEntity, User)>(&connection.0)
+        .get_results::<(GameParticipationEntity, GameEntity, User)>(connection)
         .map_err(|_| "Failed to read games")?;
 
     let result = result
@@ -103,7 +103,7 @@ pub fn get_participation(
     let result = game_participations
         .filter(user_id.eq(current_user.id).and(gid.eq(game_id)))
         .inner_join(games)
-        .get_result::<(GameParticipationEntity, GameEntity)>(&connection.0)
+        .get_result::<(GameParticipationEntity, GameEntity)>(connection)
         .map(|(parti, game)| GameParticipationDTO {
             game_id: parti.game_id,
             game_name: game.name,
@@ -135,7 +135,7 @@ pub fn add_participation(
 
     insert_into(dsl::game_participations)
         .values(&participation)
-        .execute(&connection.0)?;
+        .execute(connection)?;
 
     Ok(true)
 }
@@ -154,7 +154,7 @@ fn is_participating(connection: &DieselConnection, user: &User, game_id: i32) ->
     let result = dsl::game_participations
         .filter(dsl::game_id.eq(game_id).and(dsl::user_id.eq(user.id)))
         .count()
-        .get_result::<i64>(&connection.0)
+        .get_result::<i64>(connection)
         .optional()?
         .map(|n| n > 0)
         .unwrap_or(false);

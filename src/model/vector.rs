@@ -144,4 +144,3 @@ mod test {
         assert!(segments_intersecting(start_a, end_a, start_b, end_b));
     }
 }
-

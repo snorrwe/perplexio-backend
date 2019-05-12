@@ -7,15 +7,16 @@ pub mod solutions;
 
 pub use self::mutation::Mutation;
 pub use self::query::Query;
-use super::fairing::DieselConnection;
 use super::model::user::User;
+use crate::DieselConnection;
 use juniper::RootNode;
 
 pub struct Context {
-    pub connection: DieselConnection,
+    pub connection: *const DieselConnection,
     pub user: Option<User>,
 }
 
 impl juniper::Context for Context {}
 
-pub type Schema = RootNode<'static, Query, Mutation>;
+pub type Schema<'a> = RootNode<'static, Query, Mutation>;
+

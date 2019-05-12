@@ -80,7 +80,7 @@ pub fn fetch_games(
     let items = query
         .paginate(page)
         .per_page(25)
-        .load_and_count_pages::<(GameEntity, User)>(&connection);
+        .load_and_count_pages::<(GameEntity, User)>(connection);
     let (items, total_pages) = items.map_err(|err| {
         error!("Failed to read games {:?}", err);
         "Failed to read games"
@@ -128,7 +128,7 @@ pub fn fetch_game_by_id(
         query.filter(is_avialable_query)
     };
     let result = query
-        .get_result::<(GameEntity, User)>(&connection.0)
+        .get_result::<(GameEntity, User)>(connection)
         .optional()
         .map_err(|e| {
             error!("Failed to read game {:?}", e);
@@ -178,7 +178,7 @@ pub fn add_game(
                 published: false,
                 owner_id: current_user.id,
             })
-            .get_result::<GameEntity>(&connection.0)
+            .get_result::<GameEntity>(connection)
             .map(|game| GameDTO {
                 id: game.id,
                 name: game.name,
@@ -209,7 +209,7 @@ pub fn add_game(
                     .flatten()
                     .collect(),
             })
-            .execute(&connection.0)?;
+            .execute(connection)?;
 
         Ok(result)
     })?;
@@ -226,7 +226,7 @@ pub fn publish_game(
 
     update(dsl::games.filter(dsl::owner_id.eq(current_user.id).and(dsl::id.eq(game_id))))
         .set(dsl::published.eq(true))
-        .execute(&connection.0)?;
+        .execute(connection)?;
 
     Ok(true)
 }
@@ -254,7 +254,7 @@ pub fn update_game(
         ),
     )
     .set(changeset)
-    .get_result::<GameEntity>(&connection.0)?;
+    .get_result::<GameEntity>(connection)?;
 
     let result = GameDTO {
         id: game.id,
@@ -268,4 +268,3 @@ pub fn update_game(
 
     Ok(result)
 }
-

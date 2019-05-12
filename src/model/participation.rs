@@ -1,5 +1,5 @@
 use super::super::schema::game_participations;
-use crate::fairing::DieselConnection;
+use crate::DieselConnection;
 use crate::model::user::User;
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
@@ -48,7 +48,7 @@ impl GameParticipationEntity {
 }
 
 pub fn end_participation(
-    client: &DieselConnection,
+    connection: &DieselConnection,
     user: &User,
     game_id: i32,
 ) -> FieldResult<bool> {
@@ -61,14 +61,14 @@ pub fn end_participation(
     let start_time = gp
         .filter(user_id.eq(user.id).and(gid.eq(game_id)))
         .select((st,))
-        .get_result::<(DateTime<Utc>,)>(&client.0)
+        .get_result::<(DateTime<Utc>,)>(connection)
         .optional()?
         .ok_or("User is not participating")?;
 
     let dur = (end_time - start_time.0).num_milliseconds();
     update(gp.filter(user_id.eq(user.id).and(gid.eq(game_id))))
         .set((et.eq(end_time), duration.eq(dur as i32)))
-        .execute(&client.0)?;
+        .execute(connection)?;
 
     Ok(true)
 }
