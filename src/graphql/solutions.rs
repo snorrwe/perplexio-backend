@@ -90,7 +90,6 @@ pub fn submit_solution(
                 })
                 .execute(connection)?;
         }
-        debug!("???? {:#?} ", puzzle_solutions);
         if current_solutions.len() + 1 == puzzle_solutions.len() {
             end_participation(connection, current_user, game_id).map_err(|e| {
                 error!("Failed to end participation {:?}", e);

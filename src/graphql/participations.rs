@@ -154,6 +154,11 @@ pub fn end_participation(
     }
 
     update(dsl::game_participations)
+        .filter(
+            dsl::user_id
+                .eq(current_user.id)
+                .and(dsl::game_id.eq(game_id)),
+        )
         .set(dsl::end_time.eq(Utc::now()))
         .execute(connection)?;
 
