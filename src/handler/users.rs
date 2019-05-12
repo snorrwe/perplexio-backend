@@ -59,7 +59,11 @@ pub fn login(
     Ok(result)
 }
 
-pub fn logout(id: Identity, pool: web::Data<ConnectionPool>) -> Result<HttpResponse, Error> {
+pub fn logout(
+    id: Identity,
+    pool: web::Data<ConnectionPool>,
+    config: web::Data<Arc<Config>>,
+) -> Result<HttpResponse, Error> {
     use crate::schema::users as u;
     use diesel::update;
 
@@ -76,7 +80,10 @@ pub fn logout(id: Identity, pool: web::Data<ConnectionPool>) -> Result<HttpRespo
         id.forget();
     }
     let result = HttpResponse::Found()
-        .header(http::header::LOCATION, "/")
+        .header(
+            http::header::LOCATION,
+            config.on_login_redirect.clone().unwrap_or("/".to_string()),
+        )
         .finish();
     Ok(result)
 }
