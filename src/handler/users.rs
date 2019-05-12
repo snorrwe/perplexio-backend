@@ -7,10 +7,10 @@ use actix_web::http::Cookie;
 type Cookies = [Cookie<'static>];
 
 pub fn login(
-    code: Option<String>,
-    cookies: &Cookies,
-    config: &Config,
-    connection: &DieselConnection,
+    _code: Option<String>,
+    _cookies: &Cookies,
+    _config: &Config,
+    _connection: &DieselConnection,
 ) -> i32 {
     unimplemented!()
     // if code.is_none() {
@@ -38,9 +38,9 @@ pub fn login(
 }
 
 fn get_login_redirect_by_cookie(
-    cookies: &Cookies,
-    config: &Config,
-    connection: &DieselConnection,
+    _cookies: &Cookies,
+    _config: &Config,
+    _connection: &DieselConnection,
 ) -> i32 {
     unimplemented!()
     // if auth::logged_in_user_from_cookie(&connection, &mut cookies).is_some() {
@@ -82,11 +82,10 @@ pub fn register(token: String, cookies: &mut Cookies, config: &Config) -> i32 {
     unimplemented!()
 }
 
-fn add_auth_cookies(token: &String, cookies: &mut Cookies) {
+fn add_auth_cookies(_token: &String, _cookies: &mut Cookies) {
     unimplemented!()
     //     let auth_cookie = Cookie::build("Authorization", format!("Bearer {}", token))
     //         .path("/")
     //         .finish();
     //     cookies.add(auth_cookie);
 }
-

@@ -1,6 +1,5 @@
 use super::model::user::User;
-use super::service::auth::logged_in_user_from_cookie;
-use super::DieselConnection;
+
 use std::ops::Deref;
 
 /// Rocket Request Guard object to retreive the User before the handler code

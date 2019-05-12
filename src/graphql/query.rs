@@ -91,4 +91,3 @@ graphql_object!(Query: Context |&self| {
         solutions::get_all_solutions(connection, user, game_id)
     }
 });
-

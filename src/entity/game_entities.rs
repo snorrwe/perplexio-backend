@@ -31,4 +31,3 @@ pub struct GameUpdate {
     pub available_from: Option<Date>,
     pub available_to: Option<Date>,
 }
-

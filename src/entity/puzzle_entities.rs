@@ -51,4 +51,3 @@ impl From<Puzzle> for PuzzleUpdate {
         }
     }
 }
-

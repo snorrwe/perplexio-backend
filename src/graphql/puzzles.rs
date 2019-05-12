@@ -93,4 +93,3 @@ pub fn regenerate_puzzle(
 
     Ok(result)
 }
-

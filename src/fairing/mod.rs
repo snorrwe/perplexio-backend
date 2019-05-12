@@ -15,4 +15,3 @@ impl Deref for DieselConnection {
 impl Actor for DieselConnection {
     type Context = SyncContext<Self>;
 }
-

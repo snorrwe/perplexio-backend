@@ -63,4 +63,3 @@ graphql_object!(Mutation: Context | &self | {
         games::update_game(connection, user, payload)
     }
 });
-

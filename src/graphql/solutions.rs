@@ -121,4 +121,3 @@ fn get_current_puzzle_solutions(client: &DieselConnection, gid: i32) -> Option<V
                 .collect()
         })
 }
-

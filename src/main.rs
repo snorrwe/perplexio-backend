@@ -1,6 +1,3 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-#![allow(proc_macro_derive_resolution_fallback)]
-
 extern crate arrayvec;
 extern crate postgres;
 extern crate serde;
@@ -34,35 +31,34 @@ pub mod model;
 pub mod schema;
 pub mod service;
 
-use crate::fairing::DieselConnection;
 use crate::graphql::{mutation::Mutation, query::Query, Schema};
 use crate::service::config::Config;
-use std::sync::Arc;
-use actix_web::{server, App, HttpRequest};
-use actix::Addr;
-use dotenv::dotenv;
 
-pub struct State {
-    connection: Addr<DieselConnection>,
-}
+use actix_web::{middleware, web, App, HttpServer};
+use dotenv::dotenv;
+use std::sync::Arc;
 
 fn main() {
     dotenv().ok();
     simple_logger::init_with_level(log::Level::Debug).expect("Failed to init logging");
 
-    let config = Config::get();
+    let config = Arc::new(Config::get());
     let schema = Arc::new(Schema::new(Query, Mutation));
 
-    server::new(move || {
+    // TODO: db connection pool
+
+    HttpServer::new(move || {
         App::new()
-            .resource("/", |r| r.get().a(|r| self::handler::graphiql()))
-            .resource("/graphql", |r| {
-                r.post()
-                    .a(|r| self::handler::graphql_handler(schema.clone(), connection, request))
-            })
+            .data(config.clone())
+            .data(schema.clone())
+            .wrap(middleware::Logger::default())
+            .service(web::resource("/").route(web::get().to_async(handler::graphiql)))
+            .service(
+                web::resource("/graphql").route(web::post().to_async(handler::graphql_handler)),
+            )
     })
     .bind("localhost:8000")
     .expect("Failed to start the application")
     .run()
+    .unwrap();
 }
-
