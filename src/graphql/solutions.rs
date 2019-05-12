@@ -1,5 +1,5 @@
 use super::participations::end_participation;
-use crate::fairing::DieselConnection;
+use crate::DieselConnection;
 use crate::model::solution::{SolutionDTO, SolutionEntity, SolutionForm};
 use crate::model::user::User;
 use crate::model::vector::Vector;
@@ -19,7 +19,7 @@ pub fn get_solution_by_game_id(
 
 /// Return all solutions submitted for a game by the user
 pub fn get_users_solutions(
-    client: &DieselConnection,
+    connection: &DieselConnection,
     current_user: &User,
     game_id: i32,
 ) -> Vec<SolutionDTO> {
@@ -27,7 +27,7 @@ pub fn get_users_solutions(
 
     solutions
         .filter(user_id.eq(current_user.id).and(gid.eq(game_id)))
-        .get_results::<SolutionEntity>(&client.0)
+        .get_results::<SolutionEntity>(connection)
         .expect("Failed to get solutions")
         .iter()
         .map(|solution| {
@@ -42,7 +42,7 @@ pub fn get_users_solutions(
 
 /// Return all solutions of the game. Only if the current user is the owner of the game
 pub fn get_all_solutions(
-    client: &DieselConnection,
+    connection: &DieselConnection,
     current_user: &User,
     game_id: i32,
 ) -> FieldResult<Vec<SolutionDTO>> {
@@ -51,31 +51,31 @@ pub fn get_all_solutions(
     if dsl::games
         .filter(dsl::id.eq(game_id).and(dsl::owner_id.eq(current_user.id)))
         .count()
-        .get_result::<i64>(&client.0)?
+        .get_result::<i64>(connection)?
         == 0
     {
         Err("Game not found")?;
     }
-    let result = get_current_puzzle_solutions(client, game_id)
+    let result = get_current_puzzle_solutions(connection, game_id)
         .ok_or("Unexpected error retrieving the game")?;
     Ok(result)
 }
 
 pub fn submit_solution(
-    client: &DieselConnection,
+    connection: &DieselConnection,
     current_user: &User,
     game_id: i32,
     solution: SolutionDTO,
 ) -> FieldResult<bool> {
     let puzzle_solutions =
-        get_current_puzzle_solutions(&client, game_id).ok_or("Game does not exist")?;
+        get_current_puzzle_solutions(&connection, game_id).ok_or("Game does not exist")?;
     let result = &puzzle_solutions.iter().find(|s| **s == solution);
     if result.is_none() {
         return Ok(false);
     }
     let result = result.unwrap();
-    let current_solutions = get_users_solutions(&client, &current_user, game_id);
-    client.transaction::<_, DieselError, _>(|| {
+    let current_solutions = get_users_solutions(&connection, &current_user, game_id);
+    connection.transaction::<_, DieselError, _>(|| {
         if !current_solutions.contains(&result) {
             use crate::schema::solutions::dsl;
 
@@ -88,10 +88,10 @@ pub fn submit_solution(
                     x2: solution.solution2.x,
                     y2: solution.solution2.y,
                 })
-                .execute(&client.0)?;
+                .execute(connection)?;
         }
         if current_solutions.len() + 1 == puzzle_solutions.len() {
-            end_participation(client, current_user, game_id).map_err(|e| {
+            end_participation(connection, current_user, game_id).map_err(|e| {
                 error!("Failed to end participation {:?}", e);
                 DieselError::RollbackTransaction
             })?;
@@ -101,13 +101,13 @@ pub fn submit_solution(
     Ok(true)
 }
 
-fn get_current_puzzle_solutions(client: &DieselConnection, gid: i32) -> Option<Vec<SolutionDTO>> {
+fn get_current_puzzle_solutions(connection: &DieselConnection, gid: i32) -> Option<Vec<SolutionDTO>> {
     use crate::schema::puzzles::dsl;
 
     dsl::puzzles
         .filter(dsl::game_id.eq(gid))
         .select(dsl::solutions)
-        .get_result(&client.0)
+        .get_result(connection)
         .optional()
         .expect("Failed to read solutions")
         .map(|v: Vec<i32>| {

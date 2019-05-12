@@ -23,9 +23,7 @@ extern crate juniper;
 extern crate simple_logger;
 
 pub mod entity;
-pub mod fairing;
 pub mod graphql;
-pub mod guard;
 pub mod handler;
 pub mod model;
 pub mod schema;
@@ -33,32 +31,54 @@ pub mod service;
 
 use crate::graphql::{mutation::Mutation, query::Query, Schema};
 use crate::service::config::Config;
-
+use actix_web::middleware::identity::{CookieIdentityPolicy, IdentityService};
 use actix_web::{middleware, web, App, HttpServer};
+pub use diesel::pg::PgConnection as DieselConnection;
+use diesel::r2d2::{self, ConnectionManager};
 use dotenv::dotenv;
 use std::sync::Arc;
+
+pub type ConnectionPool = r2d2::Pool<ConnectionManager<DieselConnection>>;
 
 fn main() {
     dotenv().ok();
     simple_logger::init_with_level(log::Level::Debug).expect("Failed to init logging");
 
     let config = Arc::new(Config::get());
-    let schema = Arc::new(Schema::new(Query, Mutation));
+    let schema = Arc::new(Schema::new(Query {}, Mutation {}));
 
-    // TODO: db connection pool
+    let manager = ConnectionManager::<DieselConnection>::new(config.postgres_url.as_str());
+    let pool = r2d2::Pool::builder()
+        .build(manager)
+        .expect("Failed to create pool.");
 
     HttpServer::new(move || {
         App::new()
             .data(config.clone())
             .data(schema.clone())
+            .data(pool.clone())
             .wrap(middleware::Logger::default())
+            .wrap(IdentityService::new(
+                CookieIdentityPolicy::new(
+                    config
+                        .auth_private_key
+                        .as_ref()
+                        .map(|x| x.as_bytes())
+                        .unwrap_or(&[42; 64]),
+                )
+                .name("Authorization")
+                .secure(config.secure),
+            ))
             .service(web::resource("/").route(web::get().to_async(handler::graphiql)))
             .service(
                 web::resource("/graphql").route(web::post().to_async(handler::graphql_handler)),
             )
+            .service(web::resource("/login").route(web::get().to_async(handler::users::login)))
+            .service(web::resource("/logout").route(web::get().to_async(handler::users::logout)))
     })
     .bind("localhost:8000")
     .expect("Failed to start the application")
     .run()
     .unwrap();
 }
+

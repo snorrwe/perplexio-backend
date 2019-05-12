@@ -1,4 +1,4 @@
-use super::super::fairing::DieselConnection;
+use crate::DieselConnection;
 use super::super::model::user::User;
 use super::super::schema;
 use super::config;
@@ -48,7 +48,7 @@ pub fn logged_in_user(connection: &DieselConnection, token: &str) -> Option<User
 
     users
         .filter(auth_token.eq(token))
-        .get_result(&connection.0)
+        .get_result(connection)
         .ok()
 }
 

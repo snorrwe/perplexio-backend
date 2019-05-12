@@ -36,7 +36,7 @@ pub fn fetch_puzzle_by_game_id(
                 .or(g::dsl::owner_id.eq(current_user.id)),
         )
         .select(dsl::puzzles::all_columns())
-        .get_result::<PuzzleEntity>(&connection.0)
+        .get_result::<PuzzleEntity>(connection)
         .map(|entity| Puzzle::from(entity))
         .map(|puzzle| {
             let (columns, rows) = puzzle.get_shape();
@@ -65,7 +65,7 @@ pub fn regenerate_puzzle(
             .inner_join(g::table)
             .filter(g::dsl::owner_id.eq(current_user.id))
             .select(p::table::all_columns())
-            .get_result::<PuzzleEntity>(&connection.0)?;
+            .get_result::<PuzzleEntity>(connection)?;
 
         let puzzle = Puzzle::from_words(puzzle.words, 200).map_err(|e| {
             error!("Failed to generate puzzle {:?}", e);
@@ -77,7 +77,7 @@ pub fn regenerate_puzzle(
         update(p::table)
             .filter(p::dsl::game_id.eq(game_id))
             .set(puzzle)
-            .get_result::<PuzzleEntity>(&connection.0)
+            .get_result::<PuzzleEntity>(connection)
     })?;
 
     let result = Puzzle::from(result);
