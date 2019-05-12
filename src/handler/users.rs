@@ -87,9 +87,11 @@ pub fn register(token: &str, connection: &DieselConnection) -> Result<(), diesel
 
     let user_info = auth::get_user_from_google(&token);
 
+    let name = user_info["displayName"].to_string();
+
     insert_into(u::table)
         .values((
-            u::dsl::name.eq(user_info["displayName"].to_string()),
+            u::dsl::name.eq(&name[1..name.len()-1]), // Cut the apostrophes returned by Google
             u::dsl::auth_token.eq(&token),
             u::dsl::googleid.eq(user_info["id"].to_string()),
         ))
