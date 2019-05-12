@@ -1,8 +1,8 @@
 use crate::entity::game_entities::GameEntity;
-use crate::DieselConnection;
 use crate::model::participation::{GameParticipation, GameParticipationEntity};
 use crate::model::user::User;
 use crate::schema;
+use crate::DieselConnection;
 use chrono::{DateTime, Utc};
 use diesel::insert_into;
 use diesel::prelude::*;
@@ -96,7 +96,7 @@ pub fn get_participation(
     connection: &DieselConnection,
     current_user: &User,
     game_id: i32,
-) -> FieldResult<GameParticipationDTO> {
+) -> FieldResult<Option<GameParticipationDTO>> {
     use self::schema::game_participations::dsl::{game_participations, user_id};
     use self::schema::games::dsl::{games, id as gid};
 
@@ -104,13 +104,14 @@ pub fn get_participation(
         .filter(user_id.eq(current_user.id).and(gid.eq(game_id)))
         .inner_join(games)
         .get_result::<(GameParticipationEntity, GameEntity)>(connection)
+        .optional()?
         .map(|(parti, game)| GameParticipationDTO {
             game_id: parti.game_id,
             game_name: game.name,
             start_time: parti.start_time,
             end_time: parti.end_time,
             user_name: current_user.name.clone(),
-        })?;
+        });
 
     Ok(result)
 }
@@ -161,3 +162,4 @@ fn is_participating(connection: &DieselConnection, user: &User, game_id: i32) ->
 
     Ok(result)
 }
+

@@ -74,7 +74,7 @@ graphql_object!(Query: Context as "Query" |&self| {
     field participation(
         &executor,
         game_id: i32,
-    ) -> FieldResult<participations::GameParticipationDTO> {
+    ) -> FieldResult<Option<participations::GameParticipationDTO>> {
         let context = executor.context();
         let (connection, user) = (context.connection, &context.user);
         let user = user.as_ref().ok_or_else(||"You have to log in first")?;
