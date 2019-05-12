@@ -3,7 +3,7 @@ use crate::entity::puzzle_entities::{PuzzleEntity, PuzzleUpdate};
 use crate::model::puzzle::Puzzle;
 use crate::model::user::User;
 use crate::schema;
-use diesel::dsl::update;
+use diesel::dsl::{delete, update};
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
 use juniper::{self, FieldResult};
@@ -58,6 +58,7 @@ pub fn regenerate_puzzle(
 ) -> FieldResult<PuzzleDTO> {
     use self::schema::games as g;
     use self::schema::puzzles as p;
+    use self::schema::solutions as s;
 
     let result = connection.transaction::<_, DieselError, _>(|| {
         let puzzle = p::table
@@ -66,6 +67,10 @@ pub fn regenerate_puzzle(
             .filter(g::dsl::owner_id.eq(current_user.id))
             .select(p::table::all_columns())
             .get_result::<PuzzleEntity>(connection)?;
+
+        delete(s::table)
+            .filter(s::game_id.eq(game_id))
+            .execute(connection)?;
 
         let puzzle = Puzzle::from_words(puzzle.words, 200).map_err(|e| {
             error!("Failed to generate puzzle {:?}", e);
@@ -93,3 +98,4 @@ pub fn regenerate_puzzle(
 
     Ok(result)
 }
+
