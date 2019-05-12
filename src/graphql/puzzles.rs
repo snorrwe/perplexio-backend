@@ -56,6 +56,7 @@ pub fn regenerate_puzzle(
     current_user: &User,
     game_id: i32,
 ) -> FieldResult<PuzzleDTO> {
+    use self::schema::game_participations as gp;
     use self::schema::games as g;
     use self::schema::puzzles as p;
     use self::schema::solutions as s;
@@ -70,6 +71,10 @@ pub fn regenerate_puzzle(
 
         delete(s::table)
             .filter(s::game_id.eq(game_id))
+            .execute(connection)?;
+
+        delete(gp::table)
+            .filter(gp::game_id.eq(game_id))
             .execute(connection)?;
 
         let puzzle = Puzzle::from_words(puzzle.words, 200).map_err(|e| {

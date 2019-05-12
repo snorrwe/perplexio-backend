@@ -50,7 +50,7 @@ impl Config {
                 .collect(),
             on_login_redirect: on_login_redirect,
             client_domain: env::var("DOMAIN").unwrap_or("localhost:3000".to_string()),
-            address: env::var("ADDRESS").unwrap_or("0.0.0.0".to_string()),
+            address: env::var("ADDRESS").unwrap_or("localhost".to_string()),
             port: env::var("PORT")
                 .unwrap_or("8000".to_string())
                 .parse::<u16>()

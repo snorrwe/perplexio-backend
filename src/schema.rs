@@ -60,3 +60,4 @@ joinable!(solutions -> games (game_id));
 joinable!(solutions -> users (user_id));
 
 allow_tables_to_appear_in_same_query!(game_participations, games, puzzles, solutions, users,);
+

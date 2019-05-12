@@ -54,6 +54,8 @@ fn main() {
         .build(manager)
         .expect("Failed to create pool.");
 
+    let bind = format!("{}:{}", config.address, config.port);
+
     HttpServer::new(move || {
         let mut cors = Cors::new();
 
@@ -89,7 +91,7 @@ fn main() {
             .service(web::resource("/login").route(web::get().to_async(handler::users::login)))
             .service(web::resource("/logout").route(web::get().to_async(handler::users::logout)))
     })
-    .bind("localhost:8000")
+    .bind(&bind)
     .expect("Failed to start the application")
     .run()
     .unwrap();
