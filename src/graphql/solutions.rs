@@ -1,8 +1,10 @@
 use super::participations::end_participation;
+use crate::entity::game_entities::GameEntity;
 use crate::model::solution::{SolutionDTO, SolutionEntity, SolutionForm};
 use crate::model::user::User;
 use crate::model::vector::Vector;
 use crate::DieselConnection;
+use chrono::Utc;
 use diesel::insert_into;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -13,8 +15,11 @@ pub fn get_solution_by_game_id(
     current_user: &User,
     game_id: i32,
 ) -> FieldResult<Vec<SolutionDTO>> {
-    let result = get_users_solutions(&connection, &current_user, game_id);
-    Ok(result)
+    let r = get_users_solutions(&connection, &current_user, game_id).map_err(|e| {
+        error!("Failed to read users solutions {:?}", e);
+        "Failed to fetch solutions"
+    })?;
+    Ok(r)
 }
 
 /// Return all solutions submitted for a game by the user
@@ -22,14 +27,13 @@ pub fn get_users_solutions(
     connection: &DieselConnection,
     current_user: &User,
     game_id: i32,
-) -> Vec<SolutionDTO> {
+) -> Result<Vec<SolutionDTO>, DieselError> {
     use crate::schema::solutions::dsl::{game_id as gid, solutions, user_id};
 
-    solutions
+    let result = solutions
         .filter(user_id.eq(current_user.id).and(gid.eq(game_id)))
-        .get_results::<SolutionEntity>(connection)
-        .expect("Failed to get solutions")
-        .iter()
+        .get_results::<SolutionEntity>(connection)?
+        .into_iter()
         .map(|solution| {
             (
                 Vector::new(solution.x1, solution.y1),
@@ -37,7 +41,8 @@ pub fn get_users_solutions(
             )
         })
         .map(SolutionDTO::from)
-        .collect()
+        .collect();
+    Ok(result)
 }
 
 /// Return all solutions of the game. Only if the current user is the owner of the game
@@ -67,6 +72,23 @@ pub fn submit_solution(
     game_id: i32,
     solution: SolutionDTO,
 ) -> FieldResult<bool> {
+    {
+        use crate::schema::games::{self, dsl as g};
+
+        let now = Utc::now();
+
+        let game: GameEntity = games::table
+            .filter(g::id.eq(game_id))
+            .get_result(connection)?;
+
+        if game.available_to.map(|a| a < now).unwrap_or(false) {
+            Err("Game has expired")?;
+        }
+        if game.available_from.map(|a| now < a).unwrap_or(true) {
+            Err("Game not available")?;
+        }
+    }
+
     let puzzle_solutions =
         get_current_puzzle_solutions(&connection, game_id).ok_or("Game does not exist")?;
     let result = &puzzle_solutions.iter().find(|s| **s == solution);
@@ -74,7 +96,11 @@ pub fn submit_solution(
         return Ok(false);
     }
     let result = result.unwrap();
-    let current_solutions = get_users_solutions(&connection, &current_user, game_id);
+    let current_solutions =
+        get_users_solutions(&connection, &current_user, game_id).map_err(|e| {
+            error!("Failed to read users solutions {:?}", e);
+            "Failed to fetch solutions"
+        })?;
     connection.transaction::<_, DieselError, _>(|| {
         if !current_solutions.contains(&result) {
             use crate::schema::solutions::dsl;

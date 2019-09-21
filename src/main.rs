@@ -1,26 +1,13 @@
-extern crate arrayvec;
-extern crate postgres;
-extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
 #[macro_use]
 extern crate log;
-extern crate actix;
-extern crate actix_web;
-extern crate chrono;
-extern crate dotenv;
-extern crate futures;
-extern crate oauth2;
-extern crate rand;
-extern crate regex;
-extern crate reqwest;
 #[macro_use]
 extern crate diesel;
 #[macro_use]
 extern crate juniper;
-extern crate simple_logger;
 
 pub mod entity;
 pub mod graphql;
@@ -31,9 +18,9 @@ pub mod service;
 
 use crate::graphql::{mutation::Mutation, query::Query, Schema};
 use crate::service::config::Config;
-use actix_web::http::header;
 use actix_cors::Cors;
 use actix_identity::{CookieIdentityPolicy, IdentityService};
+use actix_web::http::header;
 use actix_web::{middleware, web, App, HttpServer};
 pub use diesel::pg::PgConnection as DieselConnection;
 use diesel::r2d2::{self, ConnectionManager};
@@ -69,7 +56,7 @@ fn main() {
             .data(pool.clone())
             .wrap(
                 cors.allowed_methods(vec!["GET", "POST"])
-                    .allowed_headers(vec![header::CONTENT_TYPE])
+                    .allowed_headers(vec![header::CONTENT_TYPE, header::AUTHORIZATION])
                     .supports_credentials(),
             )
             .wrap(middleware::Logger::default())
