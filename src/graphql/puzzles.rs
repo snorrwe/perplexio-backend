@@ -3,6 +3,7 @@ use crate::entity::puzzle_entities::{PuzzleEntity, PuzzleUpdate};
 use crate::model::puzzle::Puzzle;
 use crate::model::user::User;
 use crate::schema;
+use chrono::Utc;
 use diesel::dsl::{delete, update};
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -30,6 +31,11 @@ pub fn fetch_puzzle_by_game_id(
         .inner_join(g::table)
         .left_outer_join(gp::table.on(gp::dsl::game_id.eq(dsl::game_id)))
         .filter(dsl::game_id.eq(game_id))
+        .filter(
+            g::available_from
+                .gt(Utc::now())
+                .and(g::available_from.lt(Utc::now())),
+        )
         .filter(
             // check if the user has permissions
             gp::user_id
