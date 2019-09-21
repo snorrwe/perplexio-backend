@@ -4,7 +4,7 @@ use crate::graphql::{Context, Schema};
 use crate::service::auth;
 use crate::ConnectionPool;
 use crate::DieselConnection;
-use actix_web::middleware::identity::Identity;
+use actix_identity::Identity;
 use actix_web::{web, Error, HttpResponse};
 use futures::future::{self, Future};
 use juniper::http::graphiql::graphiql_source;

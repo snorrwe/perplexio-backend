@@ -2,7 +2,7 @@ use crate::service::auth;
 use crate::service::config::Config;
 use crate::ConnectionPool;
 use crate::DieselConnection;
-use actix_web::middleware::identity::Identity;
+use actix_identity::Identity;
 use actix_web::{dev::HttpResponseBuilder, http, web, Error, HttpResponse};
 use diesel::prelude::*;
 use std::sync::Arc;

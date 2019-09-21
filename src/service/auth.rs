@@ -1,12 +1,11 @@
-use crate::DieselConnection;
-use super::super::model::user::User;
-use super::super::schema;
 use super::config;
 use super::db_client::db_client;
-use actix_web::http::Cookie;
+use crate::model::user::User;
+use crate::schema;
+use crate::DieselConnection;
+use actix_identity::Identity;
 use diesel::prelude::*;
 use oauth2::Config;
-use regex::Regex;
 use reqwest;
 use serde_json::Value;
 
@@ -27,19 +26,9 @@ pub fn client(config: &config::Config) -> Config {
 
 /// Extract the auth token from the cookies and
 /// get the `User` using the token stored in our database
-pub fn logged_in_user_from_cookie(
-    connection: &DieselConnection,
-    cookies: &[Cookie<'static>],
-) -> Option<User> {
-    let re = Regex::new("^Bearer ").unwrap();
-    cookies
-        .iter()
-        .find(|c| c.name() == "Authorization")
-        .map(|cookie| {
-            let token = re.replace(cookie.value(), "").into_owned();
-            logged_in_user(connection, &token)
-        })
-        .unwrap_or(None)
+pub fn logged_in_user_from_cookie(connection: &DieselConnection, id: &Identity) -> Option<User> {
+    id.identity()
+        .and_then(|token| logged_in_user(connection, &token))
 }
 
 /// Get the `User` using the token stored in our database
@@ -88,3 +77,4 @@ pub fn get_user_from_google(token: &str) -> Value {
 
     serde_json::from_str(&body).expect("Failed to deserialize response")
 }
+

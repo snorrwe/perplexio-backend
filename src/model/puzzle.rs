@@ -1,5 +1,5 @@
-use super::super::entity::puzzle_entities::PuzzleEntity;
 use super::vector::{segments_intersecting, Vector};
+use crate::entity::puzzle_entities::PuzzleEntity;
 use rand::prelude::*;
 use serde_json::Value as JsonValue;
 use std::collections::HashSet;
@@ -409,3 +409,4 @@ mod test {
         assert!(shape.0 * shape.1 >= 4);
     }
 }
+
